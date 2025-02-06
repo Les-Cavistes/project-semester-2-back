@@ -1,7 +1,7 @@
 use diesel::table;
 
 table! {
-    transit_stop (id) {
+    transit_stop (id, route_id) {
         id -> Varchar,
         route_id -> Varchar,
         route_long_name -> Varchar,

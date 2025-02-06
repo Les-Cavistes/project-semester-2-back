@@ -1,5 +1,5 @@
 use back::models::{NewTransitStop, TransitStop};
-use back::DbConn;
+use back::{DbConn, DEFAULT_PAGE, MAX_PER_PAGE};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{Header, Status};
@@ -117,6 +117,47 @@ async fn create(
     }
 }
 
+/// # `search`
+/// Handles GET requests to search for transit_stops.
+///
+/// ## Arguments
+/// * `query` - The search query
+/// * `page` - The page number
+/// * `per_page` - The number of items per page
+/// * `conn` - Database connection
+///
+/// ## Returns
+/// JSON response containing the search results or an error message
+#[get("/search?<query>&<page>&<per_page>")]
+async fn search(
+    query: Option<String>,
+    page: Option<i64>,
+    per_page: Option<i64>,
+    conn: DbConn,
+) -> (Status, Json<serde_json::Value>) {
+    let query = query.unwrap_or_default();
+    let page = page.map_or(DEFAULT_PAGE, |p| p.max(1));
+    let per_page = per_page.map_or(MAX_PER_PAGE, |p| p.clamp(1, MAX_PER_PAGE));
+
+    match TransitStop::search(query, page, per_page, &conn).await {
+        Ok(transit_stops) => (
+            Status::Ok,
+            Json(json!({
+                "status": "success",
+                "message": "Successfully retrieved transit_stops",
+                "transit_stops": transit_stops
+            })),
+        ),
+        Err(e) => (
+            Status::InternalServerError,
+            Json(json!({
+                "status": "error",
+                "message": format!("Failed to retrieve transit_stops: {}", e)
+            })),
+        ),
+    }
+}
+
 /// # `rocket`
 /// Configures and launches the Rocket application.
 /// Sets up database connection, runs migrations, configures CORS, and mounts routes.
@@ -130,5 +171,5 @@ fn rocket() -> _ {
         .attach(Cors)
         .attach(AdHoc::on_ignite("Run Migrations", run_migrations))
         .mount("/", routes![root, all_options])
-        .mount("/transit_stop", routes![create])
+        .mount("/transit_stop", routes![create, search])
 }
