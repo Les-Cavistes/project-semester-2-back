@@ -3,3 +3,6 @@
 **/.idea/
 **/.commitignore
 **/commit_message.md
+**/assets/*
+**/bun.lockb
+**/db/*
