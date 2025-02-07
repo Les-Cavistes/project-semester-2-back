@@ -1,4 +1,7 @@
-use crate::paginated::{Paginate, PaginationResult};
+use crate::{
+    paginated::{Paginate, PaginationResult},
+    DbConn,
+};
 
 use diesel::{
     prelude::{Insertable, Queryable},
@@ -6,7 +9,7 @@ use diesel::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{schema::transit_stop, DbConn};
+use crate::schema::transit_stop;
 
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
