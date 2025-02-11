@@ -1,8 +1,7 @@
-import axios from "axios";
+import * as path from "path";
+import * as fs from "fs/promises";
 import { z } from "zod";
 import transitStops from "../../src/assets/metro_transilien_rer_stops.json";
-
-const API_URL = "http://127.0.0.1:8000";
 
 const TransitStopNewSchema = z.object({
     id: z.string(),
@@ -22,24 +21,49 @@ const TransitStopNewSchema = z.object({
         TransitStopNewSchema.parse(ts),
     );
 
-    let count = 0;
-    for (const transitStop of allTransitStops) {
-        // if (count >= 1) {
-        //     break;
-        // }
+    const insertStatements = allTransitStops
+        .map((stop) => {
+            return `INSERT INTO transit_stop (
+    id,
+    route_id,
+    route_long_name,
+    stop_name,
+    stop_lon,
+    stop_lat,
+    shortname,
+    nom_commune,
+    code_insee,
+    mode
+) VALUES (
+    '${stop.id}',
+    '${stop.route_id}',
+    '${stop.route_long_name.replace(/'/g, "''")}',
+    '${stop.stop_name.replace(/'/g, "''")}',
+    ${stop.stop_lon},
+    ${stop.stop_lat},
+    '${stop.shortname}',
+    '${stop.nom_commune.replace(/'/g, "''")}',
+    '${stop.code_insee}',
+    '${stop.mode}'
+);\n`;
+        })
+        .join("\n");
 
-        try {
-            await axios.post(`${API_URL}/transit_stop`, transitStop);
-            console.log(
-                `Transit stop ${transitStop.id} inserted - ${count + 1}`,
-            );
+    const upSqlPath = path.join(
+        process.cwd(),
+        "../../migrations/2025-02-05-224937_first_table/up.sql",
+    );
 
-            await new Promise((resolve) => setTimeout(resolve, 10));
-        } catch (error) {
-            console.error(`Error inserting transit stop ${transitStop.id}`);
-            console.error(error);
-        } finally {
-            count++;
-        }
+    try {
+        const currentContent = await fs.readFile(upSqlPath, "utf-8");
+        const newContent = `${currentContent}\n-- Insert transit stops\n${insertStatements}`;
+
+        await fs.writeFile(upSqlPath, newContent, "utf-8");
+
+        console.log(
+            `Successfully appended ${allTransitStops.length} insert statements to up.sql`,
+        );
+    } catch (error) {
+        console.error("Error updating up.sql file:", error);
     }
 })();

@@ -6,6 +6,7 @@ pub struct DbConn(diesel::SqliteConnection);
 
 pub mod models;
 pub mod paginated;
+pub mod routes;
 pub mod schema;
 
 pub const MAX_PER_PAGE: i64 = 100; // Prevent excessive page sizes
