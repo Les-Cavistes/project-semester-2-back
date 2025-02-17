@@ -1,10 +1,13 @@
-use back::models::{NewTransitStop, TransitStop};
-use back::{DbConn, DEFAULT_PAGE, MAX_PER_PAGE};
+use back::{
+    routes::{transit_stop_create, transit_stop_search},
+    DbConn,
+};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use rocket::fairing::{Fairing, Info, Kind};
-use rocket::http::{Header, Status};
-use rocket::serde::json::{json, serde_json, Json};
-use rocket::{fairing::AdHoc, Build, Rocket};
+use rocket::{
+    fairing::{AdHoc, Fairing, Info, Kind},
+    http::{Header, Status},
+    Build, Rocket,
+};
 
 #[macro_use]
 extern crate rocket;
@@ -69,8 +72,8 @@ impl Fairing for Cors {
 /// Handles OPTIONS requests for CORS preflight requests.
 /// This endpoint is necessary for CORS to work properly with browsers.
 #[options("/<_..>")]
-fn all_options() {
-    /* Intentionally left empty */
+fn all_options() -> Status {
+    Status::NoContent
 }
 
 /// # `root`
@@ -82,80 +85,6 @@ fn all_options() {
 #[get("/")]
 fn root() -> &'static str {
     "Hello, Rocket!"
-}
-
-/// # `create`
-/// Handles POST requests to create a new transit_stop.
-///
-/// ## Arguments
-/// * `transit_stop` - The transit_stop to create
-/// * `conn` - Database connection
-///
-/// ## Returns
-/// JSON response containing the created transit_stop or an error message
-#[post("/", data = "<transit_stop>")]
-async fn create(
-    transit_stop: Json<NewTransitStop>,
-    conn: DbConn,
-) -> (Status, Json<serde_json::Value>) {
-    match TransitStop::insert(transit_stop.into_inner(), &conn).await {
-        Ok(transit_stop) => (
-            Status::Created,
-            Json(json!({
-                "status": "success",
-                "message": "Successfully created transit_stop",
-                "transit_stop": transit_stop
-            })),
-        ),
-        Err(e) => (
-            Status::InternalServerError,
-            Json(json!({
-                "status": "error",
-                "message": format!("Failed to create transit_stop: {}", e)
-            })),
-        ),
-    }
-}
-
-/// # `search`
-/// Handles GET requests to search for transit_stops.
-///
-/// ## Arguments
-/// * `query` - The search query
-/// * `page` - The page number
-/// * `per_page` - The number of items per page
-/// * `conn` - Database connection
-///
-/// ## Returns
-/// JSON response containing the search results or an error message
-#[get("/search?<query>&<page>&<per_page>")]
-async fn search(
-    query: Option<String>,
-    page: Option<i64>,
-    per_page: Option<i64>,
-    conn: DbConn,
-) -> (Status, Json<serde_json::Value>) {
-    let query = query.unwrap_or_default();
-    let page = page.map_or(DEFAULT_PAGE, |p| p.max(1));
-    let per_page = per_page.map_or(MAX_PER_PAGE, |p| p.clamp(1, MAX_PER_PAGE));
-
-    match TransitStop::search(query, page, per_page, &conn).await {
-        Ok(transit_stops) => (
-            Status::Ok,
-            Json(json!({
-                "status": "success",
-                "message": "Successfully retrieved transit_stops",
-                "transit_stops": transit_stops
-            })),
-        ),
-        Err(e) => (
-            Status::InternalServerError,
-            Json(json!({
-                "status": "error",
-                "message": format!("Failed to retrieve transit_stops: {}", e)
-            })),
-        ),
-    }
 }
 
 /// # `rocket`
@@ -171,5 +100,8 @@ fn rocket() -> _ {
         .attach(Cors)
         .attach(AdHoc::on_ignite("Run Migrations", run_migrations))
         .mount("/", routes![root, all_options])
-        .mount("/transit_stop", routes![create, search])
+        .mount(
+            "/transit_stop",
+            routes![transit_stop_create, transit_stop_search],
+        )
 }
