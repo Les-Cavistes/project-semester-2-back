@@ -1,4 +1,20 @@
 # Backend of out project
+
+## Development
+
+CORS is configured for development with:
+- Origin: http://localhost:5173
+- Supported Methods: GET, POST, PUT, DELETE, OPTIONS
+- Credentials support enabled
+
+> [!IMPORTANT]
+> Don't forget to set up the pre-commit hooks.
+
+```
+pip install pre-commit
+pre-commit install
+```
+
 ## Project Structure
 
 ```
@@ -56,13 +72,6 @@ Key constants:
 - `MAX_PER_PAGE`: 100 (Maximum items per page)
 - `DEFAULT_PER_PAGE`: 10 (Default items per page)
 - `DEFAULT_PAGE`: 1 (Default page number)
-
-## Development
-
-CORS is configured for development with:
-- Origin: http://localhost:5173
-- Supported Methods: GET, POST, PUT, DELETE, OPTIONS
-- Credentials support enabled
 
 ## Dependencies
 
