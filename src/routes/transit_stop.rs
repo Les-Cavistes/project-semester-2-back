@@ -1,6 +1,7 @@
 use crate::{
     models::{NewTransitStop, TransitStop},
-    DbConn, DEFAULT_PAGE, MAX_PER_PAGE,
+    paginated::set_pagination_defaults,
+    DbConn,
 };
 use rocket::{
     get,
@@ -42,6 +43,43 @@ pub async fn transit_stop_create(
     }
 }
 
+/// # `get`
+/// Handles GET requests to retrieve all transit_stops.
+///
+/// ## Arguments
+/// * `page` - The page number
+/// * `per_page` - The number of items per page
+/// * `conn` - Database connection
+///
+/// ## Returns
+/// JSON response containing the retrieved transit_stop or an error message
+#[get("/?<page>&<per_page>")]
+pub async fn transit_stop_get(
+    page: Option<i64>,
+    per_page: Option<i64>,
+    conn: DbConn,
+) -> (Status, Json<serde_json::Value>) {
+    let (page, per_page) = set_pagination_defaults(page, per_page);
+
+    match TransitStop::all(page, per_page, &conn).await {
+        Ok(transit_stop) => (
+            Status::Ok,
+            Json(json!({
+                "status": "success",
+                "message": "Successfully retrieved transit_stop",
+                "transit_stop": transit_stop
+            })),
+        ),
+        Err(e) => (
+            Status::NotFound,
+            Json(json!({
+                "status": "error",
+                "message": format!("Failed to retrieve transit_stop: {}", e)
+            })),
+        ),
+    }
+}
+
 /// # `search`
 /// Handles GET requests to search for transit_stops.
 ///
@@ -61,8 +99,7 @@ pub async fn transit_stop_search(
     conn: DbConn,
 ) -> (Status, Json<serde_json::Value>) {
     let query = query.unwrap_or_default();
-    let page = page.map_or(DEFAULT_PAGE, |p| p.max(1));
-    let per_page = per_page.map_or(MAX_PER_PAGE, |p| p.clamp(1, MAX_PER_PAGE));
+    let (page, per_page) = set_pagination_defaults(page, per_page);
 
     match TransitStop::search(query, page, per_page, &conn).await {
         Ok(transit_stops) => (

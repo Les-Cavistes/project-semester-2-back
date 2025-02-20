@@ -70,6 +70,31 @@ impl TransitStop {
         .await
     }
 
+    /// # `all`
+    /// Retrieves all transit_stops from the database.
+    ///
+    /// ## Arguments
+    /// * `page` - The page number
+    /// * `per_page` - The number of items per page
+    /// * `conn` - Database connection
+    ///
+    /// ## Errors
+    /// If the transit_stops cannot be retrieved
+    pub async fn all(
+        page: i64,
+        per_page: i64,
+        conn: &DbConn,
+    ) -> QueryResult<PaginationResult<TransitStop>> {
+        conn.run(move |c| {
+            transit_stop::table
+                .order(transit_stop::id)
+                .paginate(page)
+                .per_page(per_page)
+                .load_and_count_pages(c)
+        })
+        .await
+    }
+
     /// # `search`
     /// Searches for tasks in the database.
     /// The active fields are `stop_name` and `route_long_name` and `shortname`.

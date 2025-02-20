@@ -1,5 +1,5 @@
 use back::{
-    routes::{transit_stop_create, transit_stop_search},
+    routes::{transit_stop_create, transit_stop_get, transit_stop_search},
     DbConn,
 };
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -102,6 +102,6 @@ fn rocket() -> _ {
         .mount("/", routes![root, all_options])
         .mount(
             "/transit_stop",
-            routes![transit_stop_create, transit_stop_search],
+            routes![transit_stop_get, transit_stop_search, transit_stop_create,],
         )
 }

@@ -5,7 +5,7 @@ use diesel::sqlite::Sqlite;
 use diesel::{QueryResult, RunQueryDsl, SqliteConnection};
 use serde::{Deserialize, Serialize};
 
-use crate::DEFAULT_PER_PAGE;
+use crate::{DEFAULT_PAGE, DEFAULT_PER_PAGE, MAX_PER_PAGE};
 
 pub trait Paginate: Sized {
     fn paginate(self, page: i64) -> Paginated<Self>;
@@ -105,4 +105,17 @@ where
         out.push_bind_param::<BigInt, _>(&self.offset)?;
         Ok(())
     }
+}
+
+/// # `set_pagination_defaults`
+/// Returns the default pagination values
+///
+/// ## Arguments
+/// * `page` - The default page number
+/// * `per_page` - The default number of items per page
+pub fn set_pagination_defaults(page: Option<i64>, per_page: Option<i64>) -> (i64, i64) {
+    let page = page.map_or(DEFAULT_PAGE, |p| p.max(1));
+    let per_page = per_page.map_or(MAX_PER_PAGE, |p| p.clamp(1, MAX_PER_PAGE));
+
+    (page, per_page)
 }
