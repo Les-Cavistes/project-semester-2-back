@@ -4,6 +4,7 @@
 #[rocket_sync_db_pools::database("sqlite_database")]
 pub struct DbConn(diesel::SqliteConnection);
 
+pub mod api_response;
 pub mod models;
 pub mod paginated;
 pub mod routes;

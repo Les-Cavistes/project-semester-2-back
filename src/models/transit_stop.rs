@@ -71,7 +71,7 @@ impl TransitStop {
     }
 
     /// # `all`
-    /// Retrieves all transit_stops from the database.
+    /// Retrieves all `transit_stops` from the database.
     ///
     /// ## Arguments
     /// * `page` - The page number
@@ -79,7 +79,7 @@ impl TransitStop {
     /// * `conn` - Database connection
     ///
     /// ## Errors
-    /// If the transit_stops cannot be retrieved
+    /// If the `transit_stops` cannot be retrieved
     pub async fn all(
         page: i64,
         per_page: i64,

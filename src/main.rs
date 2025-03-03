@@ -1,4 +1,5 @@
 use back::{
+    api_response::ApiResponse,
     routes::{transit_stop_create, transit_stop_get, transit_stop_search},
     DbConn,
 };
@@ -6,8 +7,10 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use rocket::{
     fairing::{AdHoc, Fairing, Info, Kind},
     http::{Header, Status},
+    serde::json::{json, Json},
     Build, Rocket,
 };
+use serde_json::Value;
 
 #[macro_use]
 extern crate rocket;
@@ -83,8 +86,10 @@ fn all_options() -> Status {
 /// ## Returns
 /// A static string greeting message
 #[get("/")]
-fn root() -> &'static str {
-    "Hello, Rocket!"
+fn root() -> Json<Value> {
+    ApiResponse::success(json!({
+        "message": "Hello, Rocket!"
+    }))
 }
 
 /// # `rocket`
@@ -102,6 +107,6 @@ fn rocket() -> _ {
         .mount("/", routes![root, all_options])
         .mount(
             "/transit_stop",
-            routes![transit_stop_get, transit_stop_search, transit_stop_create,],
+            routes![transit_stop_get, transit_stop_search, transit_stop_create],
         )
 }

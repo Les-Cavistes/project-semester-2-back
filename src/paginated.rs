@@ -113,6 +113,7 @@ where
 /// ## Arguments
 /// * `page` - The default page number
 /// * `per_page` - The default number of items per page
+#[must_use]
 pub fn set_pagination_defaults(page: Option<i64>, per_page: Option<i64>) -> (i64, i64) {
     let page = page.map_or(DEFAULT_PAGE, |p| p.max(1));
     let per_page = per_page.map_or(MAX_PER_PAGE, |p| p.clamp(1, MAX_PER_PAGE));
