@@ -1,4 +1,5 @@
 use crate::{
+    api_response::ApiResponse,
     models::{NewTransitStop, TransitStop},
     paginated::set_pagination_defaults,
     DbConn,
@@ -9,6 +10,7 @@ use rocket::{
     post,
     serde::json::{json, serde_json, Json},
 };
+use serde_json::Value;
 
 /// Handles POST requests to create a new transit_stop.
 ///
@@ -27,7 +29,6 @@ pub async fn transit_stop_create(
         Ok(transit_stop) => (
             Status::Created,
             Json(json!({
-                "status": "success",
                 "message": "Successfully created transit_stop",
                 "transit_stop": transit_stop
             })),
@@ -35,8 +36,7 @@ pub async fn transit_stop_create(
         Err(e) => (
             Status::InternalServerError,
             Json(json!({
-                "status": "error",
-                "message": format!("Failed to create transit_stop: {}", e)
+                "message": format!("Failed to create transit_stop: {e}")
             })),
         ),
     }
@@ -56,25 +56,14 @@ pub async fn transit_stop_get(
     page: Option<i64>,
     per_page: Option<i64>,
     conn: DbConn,
-) -> (Status, Json<serde_json::Value>) {
+) -> Json<Value> {
     let (page, per_page) = set_pagination_defaults(page, per_page);
 
     match TransitStop::all(page, per_page, &conn).await {
-        Ok(transit_stop) => (
-            Status::Ok,
-            Json(json!({
-                "status": "success",
-                "message": "Successfully retrieved transit_stop",
-                "transit_stop": transit_stop
-            })),
-        ),
-        Err(e) => (
-            Status::NotFound,
-            Json(json!({
-                "status": "error",
-                "message": format!("Failed to retrieve transit_stop: {}", e)
-            })),
-        ),
+        Ok(transit_stop) => ApiResponse::success(json!({
+            "transit_stop": transit_stop
+        })),
+        Err(e) => ApiResponse::not_found(&format!("Failed to retrieve transit_stop: {e}")),
     }
 }
 
@@ -94,25 +83,14 @@ pub async fn transit_stop_search(
     page: Option<i64>,
     per_page: Option<i64>,
     conn: DbConn,
-) -> (Status, Json<serde_json::Value>) {
+) -> Json<Value> {
     let query = query.unwrap_or_default();
     let (page, per_page) = set_pagination_defaults(page, per_page);
 
     match TransitStop::search(query, page, per_page, &conn).await {
-        Ok(transit_stops) => (
-            Status::Ok,
-            Json(json!({
-                "status": "success",
-                "message": "Successfully retrieved transit_stops",
-                "transit_stops": transit_stops
-            })),
-        ),
-        Err(e) => (
-            Status::InternalServerError,
-            Json(json!({
-                "status": "error",
-                "message": format!("Failed to retrieve transit_stops: {}", e)
-            })),
-        ),
+        Ok(transit_stops) => ApiResponse::success(json!({
+            "transit_stops": transit_stops
+        })),
+        Err(e) => ApiResponse::internal_error(&format!("Failed to retrieve transit_stops: {e}")),
     }
 }
