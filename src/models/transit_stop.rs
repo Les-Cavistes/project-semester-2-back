@@ -14,7 +14,7 @@ use crate::schema::transit_stop;
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = transit_stop)]
-#[diesel(check_for_backend(diesel::mysql::Mysql))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct TransitStop {
     pub id: String,
     pub route_id: String,
@@ -26,8 +26,6 @@ pub struct TransitStop {
     pub nom_commune: String,
     pub code_insee: String,
     pub mode: String,
-    pub created_at: i64,
-    pub updated_at: i64,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
@@ -44,6 +42,7 @@ pub struct NewTransitStop {
     pub nom_commune: String,
     pub code_insee: String,
     pub mode: String,
+    // created_at and updated_at will be set by PostgreSQL defaults
 }
 
 impl TransitStop {
