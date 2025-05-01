@@ -14,7 +14,7 @@ use crate::schema::transit_stop;
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = transit_stop)]
-#[diesel(check_for_backend(diesel::mysql::Mysql))]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct TransitStop {
     pub id: String,
     pub route_id: String,
@@ -71,7 +71,7 @@ impl TransitStop {
     }
 
     /// # `all`
-    /// Retrieves all transit_stops from the database.
+    /// Retrieves all `transit_stops` from the database.
     ///
     /// ## Arguments
     /// * `page` - The page number
@@ -79,7 +79,7 @@ impl TransitStop {
     /// * `conn` - Database connection
     ///
     /// ## Errors
-    /// If the transit_stops cannot be retrieved
+    /// If the `transit_stops` cannot be retrieved
     pub async fn all(
         page: i64,
         per_page: i64,

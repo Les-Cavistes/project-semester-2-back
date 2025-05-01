@@ -1,0 +1,8 @@
+pre-commit:
+    commands:
+        - cargo fmt --all -- --check
+        - cargo clippy --workspace --release --all-targets --all-features -- --deny warnings
+
+pre-push:
+    commands:
+        - cargo test
