@@ -1,8 +1,8 @@
+use diesel::pg::Pg;
 use diesel::query_builder::{AstPass, Query, QueryFragment, QueryId};
 use diesel::query_dsl::methods::LoadQuery;
 use diesel::sql_types::BigInt;
-use diesel::sqlite::Sqlite;
-use diesel::{QueryResult, RunQueryDsl, SqliteConnection};
+use diesel::{PgConnection, QueryResult, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 
 use crate::{DEFAULT_PAGE, DEFAULT_PER_PAGE, MAX_PER_PAGE};
@@ -64,10 +64,10 @@ impl<T> Paginated<T> {
     /// * Returns a `QueryResult` error if pagination calculation fails
     pub fn load_and_count_pages<'a, U>(
         self,
-        conn: &mut SqliteConnection,
+        conn: &mut PgConnection,
     ) -> QueryResult<PaginationResult<U>>
     where
-        Self: LoadQuery<'a, SqliteConnection, (U, i64)>,
+        Self: LoadQuery<'a, PgConnection, (U, i64)>,
     {
         let per_page = self.per_page;
         let page = self.page;
@@ -90,13 +90,13 @@ impl<T: Query> Query for Paginated<T> {
     type SqlType = (T::SqlType, BigInt);
 }
 
-impl<T> RunQueryDsl<SqliteConnection> for Paginated<T> {}
+impl<T> RunQueryDsl<PgConnection> for Paginated<T> {}
 
-impl<T> QueryFragment<Sqlite> for Paginated<T>
+impl<T> QueryFragment<Pg> for Paginated<T>
 where
-    T: QueryFragment<Sqlite>,
+    T: QueryFragment<Pg>,
 {
-    fn walk_ast<'b>(&'b self, mut out: AstPass<'_, 'b, Sqlite>) -> QueryResult<()> {
+    fn walk_ast<'b>(&'b self, mut out: AstPass<'_, 'b, Pg>) -> QueryResult<()> {
         out.push_sql("SELECT *, COUNT(*) OVER () FROM (");
         self.query.walk_ast(out.reborrow())?;
         out.push_sql(") t LIMIT ");
@@ -113,6 +113,7 @@ where
 /// ## Arguments
 /// * `page` - The default page number
 /// * `per_page` - The default number of items per page
+#[must_use]
 pub fn set_pagination_defaults(page: Option<i64>, per_page: Option<i64>) -> (i64, i64) {
     let page = page.map_or(DEFAULT_PAGE, |p| p.max(1));
     let per_page = per_page.map_or(MAX_PER_PAGE, |p| p.clamp(1, MAX_PER_PAGE));
