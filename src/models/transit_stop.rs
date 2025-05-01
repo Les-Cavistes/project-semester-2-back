@@ -20,14 +20,12 @@ pub struct TransitStop {
     pub route_id: String,
     pub route_long_name: String,
     pub stop_name: String,
-    pub stop_lon: f64,
-    pub stop_lat: f64,
+    pub stop_lon: f32,
+    pub stop_lat: f32,
     pub shortname: String,
     pub nom_commune: String,
     pub code_insee: String,
     pub mode: String,
-    pub created_at: i64,
-    pub updated_at: i64,
 }
 
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
@@ -38,8 +36,8 @@ pub struct NewTransitStop {
     pub route_id: String,
     pub route_long_name: String,
     pub stop_name: String,
-    pub stop_lon: f64,
-    pub stop_lat: f64,
+    pub stop_lon: f32,
+    pub stop_lat: f32,
     pub shortname: String,
     pub nom_commune: String,
     pub code_insee: String,
