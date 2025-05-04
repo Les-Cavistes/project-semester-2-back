@@ -41,6 +41,7 @@ pub struct NewTransitStop {
     pub nom_commune: String,
     pub code_insee: String,
     pub mode: String,
+    // created_at and updated_at will be set by PostgreSQL defaults
 }
 
 impl TransitStop {

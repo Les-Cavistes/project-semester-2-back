@@ -4,6 +4,7 @@
 #[rocket_sync_db_pools::database("postgres_database")]
 pub struct DbConn(diesel::PgConnection);
 
+pub mod api_response;
 pub mod models;
 pub mod paginated;
 pub mod routes;
