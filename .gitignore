@@ -7,3 +7,4 @@
 **/bun.lockb
 **/db/*
 **/Rocket.toml
+.env
