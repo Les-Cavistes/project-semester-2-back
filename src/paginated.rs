@@ -11,6 +11,7 @@ pub trait Paginate: Sized {
     fn paginate(self, page: i64) -> Paginated<Self>;
 }
 
+/// Makes `Paginate` for any wanted type.
 impl<T> Paginate for T {
     fn paginate(self, page: i64) -> Paginated<Self> {
         Paginated {
@@ -22,7 +23,7 @@ impl<T> Paginate for T {
     }
 }
 
-#[derive(Debug, Clone, Copy, QueryId)]
+#[derive(Clone, Copy, QueryId)]
 pub struct Paginated<T> {
     query: T,
     page: i64,
@@ -30,7 +31,7 @@ pub struct Paginated<T> {
     offset: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PaginationResult<T> {
     pub items: Vec<T>,
     pub total_items: i64,
@@ -49,19 +50,18 @@ impl<T> Paginated<T> {
         }
     }
 
-    /// # `load_and_count_pages`
     /// Loads the paginated results and counts the total number of items.
     /// This function is used to return a `PaginationResult` containing the paginated items.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `conn` - Database connection
     ///
-    /// ## Returns
-    /// A `QueryResult` containing the paginated items and total number of items
-    ///
-    /// ## Errors
+    /// # Errors
     /// * Returns a `QueryResult` error if the database operation fails
     /// * Returns a `QueryResult` error if pagination calculation fails
+    ///
+    /// # Returns
+    /// * `PaginationResult<U>` - The paginated items and total number of items
     pub fn load_and_count_pages<'a, U>(
         self,
         conn: &mut PgConnection,
@@ -107,12 +107,14 @@ where
     }
 }
 
-/// # `set_pagination_defaults`
 /// Returns the default pagination values
 ///
-/// ## Arguments
+/// # Arguments
 /// * `page` - The default page number
 /// * `per_page` - The default number of items per page
+///
+/// # Returns
+/// * `(i64, i64)` - The default page number and the default number of items per page
 #[must_use]
 pub fn set_pagination_defaults(page: Option<i64>, per_page: Option<i64>) -> (i64, i64) {
     let page = page.map_or(DEFAULT_PAGE, |p| p.max(1));

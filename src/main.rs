@@ -12,7 +12,6 @@ use rocket::{
 #[macro_use]
 extern crate rocket;
 
-/// # `run_migrations`
 /// Runs database migrations on application startup.
 /// This ensures the database schema is up to date before the application begins serving requests.
 ///
@@ -20,7 +19,7 @@ extern crate rocket;
 /// * `rocket` - The Rocket instance being configured
 ///
 /// ## Returns
-/// The configured Rocket instance
+/// * `Rocket<Build>` - The configured Rocket instance
 async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
@@ -36,7 +35,7 @@ async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket
 }
 
-/// # CORS Configuration
+/// CORS Configuration
 /// Implements CORS (Cross-Origin Resource Sharing) headers for the application.
 /// Allows requests from localhost:5173 during development.
 pub struct Cors;
@@ -50,6 +49,12 @@ impl Fairing for Cors {
         }
     }
 
+    /// Handles CORS preflight requests.
+    /// This function sets the necessary CORS headers for preflight requests.
+    ///
+    /// # Arguments
+    /// * `_request` - The incoming request (not used here)
+    /// * `response` - The response to be modified.
     async fn on_response<'r>(
         &self,
         _request: &'r rocket::Request<'_>,
@@ -68,7 +73,6 @@ impl Fairing for Cors {
     }
 }
 
-/// # `all_options`
 /// Handles OPTIONS requests for CORS preflight requests.
 /// This endpoint is necessary for CORS to work properly with browsers.
 #[options("/<_..>")]
@@ -76,23 +80,19 @@ fn all_options() -> Status {
     Status::NoContent
 }
 
-/// # `root`
 /// Handles GET requests to the root path ("/").
 /// Serves as a simple health check endpoint.
 ///
-/// ## Returns
-/// A static string greeting message
+/// # Returns
+/// * `&'static str` - A static string greeting message
 #[get("/")]
 fn root() -> &'static str {
     "Hello, Rocket!"
 }
 
-/// # `rocket`
 /// Configures and launches the Rocket application.
 /// Sets up database connection, runs migrations, configures CORS, and mounts routes.
 ///
-/// ## Returns
-/// The configured Rocket instance
 #[launch]
 fn rocket() -> _ {
     rocket::build()
