@@ -3,13 +3,12 @@ use crate::{
     DbConn,
 };
 
+use crate::schema::transit_stop;
 use diesel::{
     prelude::{Insertable, Queryable},
     QueryDsl, QueryResult, RunQueryDsl, TextExpressionMethods,
 };
 use serde::{Deserialize, Serialize};
-
-use crate::schema::transit_stop;
 
 #[derive(Debug, Clone, Queryable, Insertable, Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -46,18 +45,17 @@ pub struct NewTransitStop {
 }
 
 impl TransitStop {
-    /// # `insert`
     /// Creates a new task in the database.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `todo` - The todo item to insert
     /// * `conn` - Database connection
     ///
-    /// ## Errors
-    /// If the task cannot be inserted
+    /// # Errors
+    /// * If the task cannot be inserted
     ///
-    /// ## Returns
-    /// The newly created task
+    /// # Returns
+    /// * `String` - The ID of the newly created task
     pub async fn insert(transit_stop: NewTransitStop, conn: &DbConn) -> QueryResult<String> {
         conn.run(|c| {
             diesel::insert_into(transit_stop::table)
@@ -69,16 +67,18 @@ impl TransitStop {
         .await
     }
 
-    /// # `all`
     /// Retrieves all `transit_stops` from the database.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `page` - The page number
     /// * `per_page` - The number of items per page
     /// * `conn` - Database connection
     ///
-    /// ## Errors
-    /// If the `transit_stops` cannot be retrieved
+    /// # Errors
+    /// * If the `transit_stops` cannot be retrieved
+    ///
+    /// # Returns
+    /// * `PaginationResult<TransitStop>` - The paginated result of `transit_stops`
     pub async fn all(
         page: i64,
         per_page: i64,
@@ -94,18 +94,20 @@ impl TransitStop {
         .await
     }
 
-    /// # `search`
     /// Searches for tasks in the database.
     /// The active fields are `stop_name` and `route_long_name` and `shortname`.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `query` - The search query
     /// * `page` - The page number
     /// * `per_page` - The number of items per page
     /// * `conn` - Database connection
     ///
-    /// ## Errors
+    /// # Errors
     /// If the tasks cannot be retrieved
+    ///
+    /// # Returns
+    /// * `PaginationResult<TransitStop>` - A `QueryResult` containing a `PaginationResult` of `TransitStop` objects
     pub async fn search(
         query: String,
         page: i64,

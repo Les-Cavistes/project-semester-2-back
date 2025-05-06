@@ -6,5 +6,6 @@
 **/assets/*
 **/bun.lockb
 **/db/*
+**/.env
 **/Rocket.toml
 .env

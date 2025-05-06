@@ -12,15 +12,14 @@ use rocket::{
 };
 use serde_json::Value;
 
-/// # `create`
 /// Handles POST requests to create a new transit_stop.
 ///
-/// ## Arguments
+/// # Arguments
 /// * `transit_stop` - The transit_stop to create
 /// * `conn` - Database connection
 ///
-/// ## Returns
-/// JSON response containing the created transit_stop or an error message
+/// # Returns
+/// * `(Status, Json<serde_json::Value>)` - The `Status` and JSON response containing the created transit_stop or an error message
 #[post("/", data = "<transit_stop>")]
 pub async fn transit_stop_create(
     transit_stop: Json<NewTransitStop>,
@@ -43,16 +42,15 @@ pub async fn transit_stop_create(
     }
 }
 
-/// # `get`
 /// Handles GET requests to retrieve all transit_stops.
 ///
-/// ## Arguments
+/// # Arguments
 /// * `page` - The page number
 /// * `per_page` - The number of items per page
 /// * `conn` - Database connection
 ///
-/// ## Returns
-/// JSON response containing the retrieved transit_stop or an error message
+/// # Returns
+/// * `(Status, Json<serde_json::Value>)` - The status and JSON response containing the retrieved transit_stops or an error message
 #[get("/?<page>&<per_page>")]
 pub async fn transit_stop_get(
     page: Option<i64>,
@@ -69,17 +67,16 @@ pub async fn transit_stop_get(
     }
 }
 
-/// # `search`
 /// Handles GET requests to search for transit_stops.
 ///
-/// ## Arguments
+/// # Arguments
 /// * `query` - The search query
 /// * `page` - The page number
 /// * `per_page` - The number of items per page
 /// * `conn` - Database connection
 ///
-/// ## Returns
-/// JSON response containing the search results or an error message
+/// # Returns
+/// * `(Status, Json<serde_json::Value>)` - The status and JSON response containing the search results or an error message
 #[get("/search?<query>&<page>&<per_page>")]
 pub async fn transit_stop_search(
     query: Option<String>,
