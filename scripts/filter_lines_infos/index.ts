@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as fs from "fs/promises";
 import refLines from "../../src/assets/referentiel-des-lignes.json";
-import { z } from "zod";
+import {z} from "zod";
 import axios from "axios";
 
 const PictoSchema = z.object({
@@ -48,43 +48,36 @@ const LineSchema = z.object({
 
 
 (async () => {
-    const allLines = refLines.map((rl) =>
-        LineSchema.parse(rl),
-    );
+  const allLines = refLines.map((rl) =>
+    LineSchema.parse(rl),
+  );
 
-    const linesWithPictoUrl = allLines.filter((line) => line.picto?.url);
+  const linesWithPictoUrl = allLines.filter((line) => line.picto?.url);
 
-    const assetsPath = path.join(
-        process.cwd(),
-        "../src/assets/pictos",
-    );
+  const assetsPath = path.join(
+    process.cwd(),
+    "../src/assets/pictos",
+  );
 
-    // if no `picto` folder exists, create it
-    try {
-        if (!(await fs.exists(assetsPath))) {
-            await fs.mkdir(assetsPath);
-        }
-
-        await Promise.all(linesWithPictoUrl.map(async (line) => {
-            const { id_line, picto } = line;
-            const response = await axios.get(picto!.url, { responseType: 'arraybuffer' });
-            const buffer = Buffer.from(response.data, 'binary');
-
-            const filename = `${id_line}.png`;
-
-            await fs.writeFile(path.join(assetsPath, filename), buffer);
-        }));
-    } catch (error) {
-        console.error(error);
-    } finally {
-        console.log('Pictos downloaded successfully');
+  // if no `picto` folder exists, create it
+  try {
+    if (!(await fs.exists(assetsPath))) {
+      await fs.mkdir(assetsPath);
     }
 
+    await Promise.all(linesWithPictoUrl.map(async (line) => {
+      const {id_line, picto} = line;
+      const response = await axios.get(picto!.url, {responseType: 'arraybuffer'});
+      const buffer = Buffer.from(response.data, 'binary');
+
+      const filename = `${id_line}.png`;
+
+      await fs.writeFile(path.join(assetsPath, filename), buffer);
+    }));
+  } catch (error) {
+    console.error(error);
+  } finally {
+    console.log('Pictos downloaded successfully');
+  }
+
 })();
-
-const a = [{
-    id: 1,
-    name: 'Aled'
-}]
-
-const test = a.any((line) => line.id === 1)
