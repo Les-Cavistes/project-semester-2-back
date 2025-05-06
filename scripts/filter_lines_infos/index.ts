@@ -1,9 +1,9 @@
-import * as path from "path";
-import * as fs from "fs/promises";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import refLines from "../../src/assets/referentiel-des-lignes.json";
 
-import { z } from "zod";
 import axios from "axios";
+import {z} from "zod";
 
 const PictoSchema = z.object({
   thumbnail: z.boolean(),
@@ -15,7 +15,7 @@ const PictoSchema = z.object({
   last_synchronized: z.string(),
   color_summary: z.array(z.unknown()),
   height: z.number(),
-  url: z.string()
+  url: z.string(),
 });
 
 const LineSchema = z.object({
@@ -44,21 +44,15 @@ const LineSchema = z.object({
   valid_fromdate: z.string(),
   valid_todate: z.string().nullable(),
   status: z.string(),
-  privatecode: z.string().nullable()
+  privatecode: z.string().nullable(),
 });
 
-
 (async () => {
-  const allLines = refLines.map((rl) =>
-    LineSchema.parse(rl),
-  );
+  const allLines = refLines.map((rl) => LineSchema.parse(rl));
 
   const linesWithPictoUrl = allLines.filter((line) => line.picto?.url);
 
-  const assetsPath = path.join(
-    process.cwd(),
-    "../src/assets/pictos",
-  );
+  const assetsPath = path.join(process.cwd(), "../src/assets/pictos");
 
   // if no `picto` folder exists, create it
   try {
@@ -66,19 +60,22 @@ const LineSchema = z.object({
       await fs.mkdir(assetsPath);
     }
 
-    await Promise.all(linesWithPictoUrl.map(async (line) => {
-      const {id_line, picto} = line;
-      const response = await axios.get(picto!.url, {responseType: 'arraybuffer'});
-      const buffer = Buffer.from(response.data, 'binary');
+    await Promise.all(
+      linesWithPictoUrl.map(async (line) => {
+        const {id_line, picto} = line;
+        const response = await axios.get(picto!.url, {
+          responseType: "arraybuffer",
+        });
+        const buffer = Buffer.from(response.data, "binary");
 
-      const filename = `${id_line}.png`;
+        const filename = `${id_line}.png`;
 
-      await fs.writeFile(path.join(assetsPath, filename), buffer);
-    }));
+        await fs.writeFile(path.join(assetsPath, filename), buffer);
+      }),
+    );
   } catch (error) {
     console.error(error);
   } finally {
-    console.log('Pictos downloaded successfully');
+    console.log("Pictos downloaded successfully");
   }
-
 })();
