@@ -1,7 +1,8 @@
 import * as path from "path";
 import * as fs from "fs/promises";
 import refLines from "../../src/assets/referentiel-des-lignes.json";
-import {z} from "zod";
+
+import { z } from "zod";
 import axios from "axios";
 
 const PictoSchema = z.object({

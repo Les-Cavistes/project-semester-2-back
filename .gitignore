@@ -8,3 +8,4 @@
 **/db/*
 **/.env
 **/Rocket.toml
+.env
