@@ -78,5 +78,5 @@ Key constants:
 Major dependencies:
 - Rocket: Web framework
 - Diesel: ORM and query builder
-- SQLite: Database
+- PostgreSQL: Database
 - Serde: Serialization/Deserialization
