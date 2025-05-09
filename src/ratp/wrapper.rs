@@ -116,9 +116,6 @@ impl RatpClient {
             .header("apikey", &self.api_key)
             .send()
             .await?;
-        println!("URL: {}", url);
-        println!("Response: {:?}", response);
-        println!("apikey: {}", &self.api_key);
         response.error_for_status()?.text().await
     }
 }
