@@ -45,7 +45,7 @@ pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value
     let from_coords: Result<LatLon, geoconvert::Error> = LatLon::create(from_lat, from_lon);
     let to_coords: Result<LatLon, geoconvert::Error> = LatLon::create(to_lat, to_lon);
     if from_coords.is_err() || to_coords.is_err() {
-        return ApiResponse::error(Status::BadRequest, "Invalid coordinates provided.");
+        ApiResponse::error(Status::BadRequest, "Invalid coordinates provided.")
     } else {
         let from_coords: LatLon = from_coords.unwrap();
         let to_coords: LatLon = to_coords.unwrap();
@@ -56,14 +56,12 @@ pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value
         match client.fetch_journey(from_coords, to_coords).await {
             Ok(response) => {
                 let json_response: Value = serde_json::from_str(&response).unwrap();
-                return ApiResponse::success(json_response);
+                ApiResponse::success(json_response)
             }
-            Err(e) => {
-                return ApiResponse::error(
-                    Status::InternalServerError,
-                    &format!("Failed to fetch journey: {}", e),
-                );
-            }
+            Err(e) => ApiResponse::error(
+                Status::InternalServerError,
+                &format!("Failed to fetch journey: {}", e),
+            ),
         }
     }
 }
