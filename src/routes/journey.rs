@@ -3,6 +3,14 @@ use geoconvert::LatLon;
 use rocket::{get, http::Status, serde::json::Json};
 use serde_json::{json, Value};
 
+/// This module handles the journey-related routes for the RATP API.
+/// It provides an endpoint to fetch journey information based on coordinates.
+/// # Arguments:
+/// - `from`: The starting coordinates in the format "longitude;latitude".
+/// - `to`: The destination coordinates in the format "longitude;latitude".
+///
+/// # Returns:
+/// - A JSON response containing the journey information or an error message.
 #[get("/?<from>&<to>")]
 pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value> {
     let from = from.unwrap_or_default();
@@ -84,6 +92,15 @@ pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value
     }
 }
 
+/// Extracts place information from the given `Place` object.
+/// If the place is a stop point, it retrieves the stop point ID and coordinates from the address field.
+/// If the place is not a stop point, it retrieves the address coordinates.
+///
+/// # Arguments
+/// * `place` - An optional reference to a `Place` object.
+///
+/// # Returns
+/// * A JSON object containing the place information.
 fn extract_place_info(place: &Option<Place>) -> Value {
     match place {
         Some(place) => {
