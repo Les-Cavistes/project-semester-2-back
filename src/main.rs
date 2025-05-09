@@ -1,6 +1,6 @@
 use back::{
     api_response::ApiResponse,
-    routes::{transit_stop_create, transit_stop_get, transit_stop_search},
+    routes::{journey_get, transit_stop_create, transit_stop_get, transit_stop_search},
     DbConn,
 };
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -109,4 +109,5 @@ fn rocket() -> _ {
             "/transit_stop",
             routes![transit_stop_get, transit_stop_search, transit_stop_create],
         )
+        .mount("/journey", routes![journey_get])
 }
