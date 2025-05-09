@@ -34,8 +34,12 @@
 //! - `dotenv`: For loading environment variables from `.env` file
 //! - `reqwest`: For making HTTP requests
 
+use std::collections::HashMap;
+
 use dotenv::dotenv;
 use reqwest::Client;
+
+use crate::{models::JourneyResponse, url::Url};
 
 /// A client wrapper for the RATP/Île-de-France Mobilités API.
 ///
@@ -95,5 +99,29 @@ impl RatpClient {
             base_url: "https://prim.iledefrance-mobilites.fr/marketplace/v2",
             api_key,
         }
+    }
+
+    /// Fetches a journey from the RATP API.
+    pub async fn fetch_journey(
+        &self,
+        from: String,
+        to: String,
+    ) -> Result<JourneyResponse, reqwest::Error> {
+        let mut params: HashMap<String, String> = HashMap::new();
+        params.insert("from".to_string(), from);
+        params.insert("to".to_string(), to);
+        let url = Url::new(self.base_url)
+            .add_path("navitia")
+            .add_path("journeys")
+            .add_args(params);
+        let url = url.build();
+        let response = self
+            .client
+            .get(&url)
+            .header("apikey", &self.api_key)
+            .send()
+            .await?
+            .error_for_status()?;
+        response.json::<JourneyResponse>().await
     }
 }
