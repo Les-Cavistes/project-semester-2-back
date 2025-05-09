@@ -1,7 +1,7 @@
-use crate::{api_response::ApiResponse, ratp::RatpClient};
+use crate::{api_response::ApiResponse, models::Place, ratp::RatpClient};
 use geoconvert::LatLon;
 use rocket::{get, http::Status, serde::json::Json};
-use serde_json::Value;
+use serde_json::{json, Value};
 
 #[get("/?<from>&<to>")]
 pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value> {
@@ -55,13 +55,69 @@ pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value
         let client = RatpClient::new();
         match client.fetch_journey(from_coords, to_coords).await {
             Ok(response) => {
-                let json_response: Value = serde_json::from_str(&response).unwrap();
-                ApiResponse::success(json_response)
+                let simplified_response = json!({
+                    "journeys": response.journeys.iter().map(|journey| {
+                        json!({
+                            "duration": journey.duration,
+                            "sections": journey.sections.iter().filter(|section| section.type_ != "waiting").map(|section| {
+                                let from_place = extract_place_info(&section.from);
+                                let to_place = extract_place_info(&section.to);
+
+                                json!({
+                                    "duration": section.duration,
+                                    "departure_date_time": section.departure_date_time,
+                                    "arrival_date_time": section.arrival_date_time,
+                                    "from": from_place,
+                                    "to": to_place,
+                                    "type": section.type_})
+                            }).collect::<Vec<_>>()
+                        })
+                    }).collect::<Vec<_>>()
+                });
+                ApiResponse::success(simplified_response)
             }
             Err(e) => ApiResponse::error(
                 Status::InternalServerError,
                 &format!("Failed to fetch journey: {}", e),
             ),
         }
+    }
+}
+
+fn extract_place_info(place: &Option<Place>) -> Value {
+    match place {
+        Some(place) => {
+            let is_stop_point = place.embedded_type == "stop_point";
+
+            if is_stop_point {
+                match &place.stop_point {
+                    Some(stop_point) => {
+                        json!({
+                            "id": stop_point.id,
+                            "name": place.name,
+                            "coordinates": {
+                                "lon": stop_point.address.coord.lon,
+                                "lat": stop_point.address.coord.lat
+                            }
+                        })
+                    }
+                    None => json!({ "error": "Missing stop point data" }),
+                }
+            } else {
+                match &place.address {
+                    Some(address) => {
+                        json!({
+                            "name": place.name,
+                            "coordinates": {
+                                "lon": address.coord.lon,
+                                "lat": address.coord.lat
+                            }
+                        })
+                    }
+                    None => json!({ "error": "Missing address data" }),
+                }
+            }
+        }
+        None => json!(null),
     }
 }
