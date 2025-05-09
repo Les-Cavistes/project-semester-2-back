@@ -109,6 +109,7 @@ impl RatpClient {
         }
     }
 
+    /// Fetches a journey from the RATP API.
     pub async fn fetch_journey(
         &self,
         from: String,
