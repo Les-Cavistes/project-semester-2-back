@@ -35,7 +35,7 @@
 //! - `reqwest`: For making HTTP requests
 
 use dotenv::dotenv;
-use reqwest::Client;
+use reqwest::{header, Client};
 
 /// A client wrapper for the RATP/Île-de-France Mobilités API.
 ///
@@ -53,8 +53,6 @@ pub struct RatpClient {
     client: Client,
     /// Base URL for the API endpoints
     base_url: &'static str,
-    /// API key for authentication
-    api_key: String,
 }
 
 impl Default for RatpClient {
@@ -69,7 +67,7 @@ impl RatpClient {
     /// This constructor will:
     /// 1. Load environment variables from the `.env` file if present
     /// 2. Retrieve the RATP API key from environment variables
-    /// 3. Initialize a new HTTP client
+    /// 3. Initialize a new HTTP client with the auth header
     ///
     /// # Panics
     ///
@@ -90,10 +88,20 @@ impl RatpClient {
         let api_key =
             std::env::var("RATP_API_KEY").expect("RATP_API_KEY environment variable is not set");
 
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            "apikey",
+            header::HeaderValue::from_str(&api_key).expect("Invalid API key format"),
+        );
+
+        let client = Client::builder()
+            .default_headers(headers)
+            .build()
+            .expect("Failed to build HTTP client");
+
         RatpClient {
-            client: Client::new(),
+            client,
             base_url: "https://prim.iledefrance-mobilites.fr/marketplace/v2",
-            api_key,
         }
     }
 }
