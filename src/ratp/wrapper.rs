@@ -110,6 +110,46 @@ impl RatpClient {
     }
 
     /// Fetches a journey from the RATP API.
+    ///
+    /// This method queries the RATP API to find journey options between two locations.
+    ///
+    /// # Parameters
+    ///
+    /// * `from` - The origin location identifier, which can be:
+    ///   - Coordinates in format "lon;lat" (e.g. "2.3567;48.8569")
+    ///   - Stop point ID in format "stop_point:IDFM:XXXX"
+    ///   - Stop area ID in format "stop_area:IDFM:XXXX"
+    ///   - Point of Interest ID in format "poi:IDFM:XXXX"
+    /// * `to` - The destination location identifier, in the same format options as `from`
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` containing either:
+    /// * `JourneyResponse` - The successful journey data from the API
+    /// * `reqwest::Error` - Any error that occurred during the HTTP request
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// * The API request fails (connection issues, timeout, etc.)
+    /// * The API returns an error status code
+    /// * The response cannot be parsed into a `JourneyResponse`
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use back::ratp::RatpClient;
+    ///
+    /// # async fn example() -> Result<(), reqwest::Error> {
+    /// let client = RatpClient::new();
+    /// let journey = client.fetch_journey(
+    ///     "2.3565;48.8666".to_string(),  // 2 rue Conté coordinates
+    ///     "2.2950;48.8738".to_string()   // Charles de Gaulle - Etoile coordinates
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     pub async fn fetch_journey(
         &self,
         from: String,
@@ -121,15 +161,9 @@ impl RatpClient {
         let url = Url::new(self.base_url)
             .add_path("navitia")
             .add_path("journeys")
-            .add_args(params);
-        let url = url.build();
-        let response = self
-            .client
-            .get(&url)
-            .header("apikey", &self.api_key)
-            .send()
-            .await?
-            .error_for_status()?;
+            .add_args(params)
+            .build();
+        let response = self.client.get(&url).send().await?.error_for_status()?;
         response.json::<JourneyResponse>().await
     }
 }
