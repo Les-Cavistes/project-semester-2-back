@@ -11,8 +11,8 @@ CORS is configured for development with:
 > Don't forget to set up the pre-commit hooks.
 
 ```
-pip install pre-commit
-pre-commit install
+cargo install hooksmith
+hooksmith install
 ```
 
 ## Project Structure
