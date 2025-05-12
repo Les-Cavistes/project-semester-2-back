@@ -50,7 +50,6 @@ use crate::{models::JourneyResponse, url::Url};
 ///
 /// * `client` - The underlying HTTP client for making requests
 /// * `base_url` - The base URL for all API endpoints
-/// * `api_key` - The authentication key for API access
 pub struct RatpClient {
     /// HTTP client instance from reqwest
     client: Client,
