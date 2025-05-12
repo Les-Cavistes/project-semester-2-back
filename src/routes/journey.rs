@@ -1,94 +1,137 @@
+use crate::models::JourneyResponse;
 use crate::{api_response::ApiResponse, models::Place, ratp::RatpClient};
 use geoconvert::LatLon;
 use rocket::{get, http::Status, serde::json::Json};
 use serde_json::{json, Value};
 
-/// This module handles the journey-related routes for the RATP API.
-/// It provides an endpoint to fetch journey information based on coordinates.
-/// # Arguments:
-/// - `from`: The starting coordinates in the format "longitude;latitude".
-/// - `to`: The destination coordinates in the format "longitude;latitude".
+/// Represents possible errors that can occur during journey processing
+#[derive(Debug)]
+enum JourneyError {
+    MissingParameters,
+    InvalidCoordinateFormat,
+    InvalidCoordinateValues,
+    InvalidCoordinates,
+    RatpError(String),
+}
+
+impl From<JourneyError> for Json<Value> {
+    fn from(error: JourneyError) -> Self {
+        match error {
+            JourneyError::MissingParameters => ApiResponse::error(
+                Status::BadRequest,
+                "Both 'from' and 'to' parameters are required.",
+            ),
+            JourneyError::InvalidCoordinateFormat => ApiResponse::error(
+                Status::BadRequest,
+                "Coordinates must be in format 'longitude;latitude'",
+            ),
+            JourneyError::InvalidCoordinateValues => ApiResponse::error(
+                Status::BadRequest,
+                "Invalid coordinate values. Must be valid numbers.",
+            ),
+            JourneyError::InvalidCoordinates => {
+                ApiResponse::error(Status::BadRequest, "Invalid coordinates provided.")
+            }
+            JourneyError::RatpError(msg) => ApiResponse::error(
+                Status::InternalServerError,
+                &format!("Failed to fetch journey: {msg}"),
+            ),
+        }
+    }
+}
+
+/// Parses coordinate string into a `LatLon` object
 ///
-/// # Returns:
-/// - A JSON response containing the journey information or an error message.
+/// # Arguments
+/// * `coord_str` - A string representing coordinates in the format "longitude;latitude"
+///
+/// # Returns
+/// * `Ok(LatLon)` if the coordinates are valid
+/// * `Err(JourneyError)` if the format is invalid, or values are not numbers
+fn parse_coordinates(coord_str: &str) -> Result<LatLon, JourneyError> {
+    let parts: Vec<&str> = coord_str.split(';').collect();
+    if parts.len() != 2 {
+        return Err(JourneyError::InvalidCoordinateFormat);
+    }
+
+    let lon: f64 = parts[0]
+        .trim()
+        .parse()
+        .map_err(|_| JourneyError::InvalidCoordinateValues)?;
+    let lat: f64 = parts[1]
+        .trim()
+        .parse()
+        .map_err(|_| JourneyError::InvalidCoordinateValues)?;
+
+    LatLon::create(lat, lon).map_err(|_| JourneyError::InvalidCoordinates)
+}
+
+/// Transforms the raw journey response into a simplified format
+///
+/// # Arguments
+/// * `response` - The raw journey response from the RATP API
+///
+/// # Returns
+/// * `Value` - A JSON object containing the transformed journey data
+fn transform_journey_response(response: &JourneyResponse) -> Value {
+    json!({
+        "journeys": response.journeys.iter().map(|journey| {
+            json!({
+                "duration": journey.duration,
+                "sections": journey.sections
+                    .iter()
+                    .filter(|section| section.type_ != "waiting")
+                    .map(|section| {
+                        let from_place = extract_place_info(Option::from(&section.from));
+                        let to_place = extract_place_info(Option::from(&section.to));
+
+                        json!({
+                            "duration": section.duration,
+                            "departure_date_time": section.departure_date_time,
+                            "arrival_date_time": section.arrival_date_time,
+                            "from": from_place,
+                            "to": to_place,
+                            "type": section.type_
+                        })
+                    })
+                    .collect::<Vec<_>>()
+            })
+        }).collect::<Vec<_>>()
+    })
+}
+
+/// Handles journey-related routes for the RATP API.
+/// Provides an endpoint to fetch journey information based on coordinates.
+///
+/// # Arguments
+/// * `from` - Starting coordinates in format "longitude;latitude"
+/// * `to` - Destination coordinates in format "longitude;latitude"
+///
+/// # Returns
+/// JSON response containing journey information or error message
 #[get("/?<from>&<to>")]
 pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value> {
     let from = from.unwrap_or_default();
     let to = to.unwrap_or_default();
 
     if from.is_empty() || to.is_empty() {
-        return ApiResponse::error(
-            Status::BadRequest,
-            "Both 'from' and 'to' parameters are required.",
-        );
+        return JourneyError::MissingParameters.into();
     }
 
-    let from_parts: Vec<&str> = from.split(';').collect();
-    let to_parts: Vec<&str> = to.split(';').collect();
+    let from_coords = match parse_coordinates(&from) {
+        Ok(coords) => format!("{};{}", coords.longitude(), coords.latitude()),
+        Err(e) => return e.into(),
+    };
 
-    if from_parts.len() != 2 || to_parts.len() != 2 {
-        return ApiResponse::error(
-            Status::BadRequest,
-            "Coordinates must be in format 'longitude;latitude'",
-        );
-    }
+    let to_coords = match parse_coordinates(&to) {
+        Ok(coords) => format!("{};{}", coords.longitude(), coords.latitude()),
+        Err(e) => return e.into(),
+    };
 
-    let from_lon: Result<f64, _> = from_parts[0].trim().parse();
-    let from_lat: Result<f64, _> = from_parts[1].trim().parse();
-    let to_lon: Result<f64, _> = to_parts[0].trim().parse();
-    let to_lat: Result<f64, _> = to_parts[1].trim().parse();
-
-    if from_lon.is_err() || from_lat.is_err() || to_lon.is_err() || to_lat.is_err() {
-        return ApiResponse::error(
-            Status::BadRequest,
-            "Invalid coordinate values. Must be valid numbers.",
-        );
-    }
-
-    let from_lon = from_lon.unwrap();
-    let from_lat = from_lat.unwrap();
-    let to_lon = to_lon.unwrap();
-    let to_lat = to_lat.unwrap();
-
-    let from_coords: Result<LatLon, geoconvert::Error> = LatLon::create(from_lat, from_lon);
-    let to_coords: Result<LatLon, geoconvert::Error> = LatLon::create(to_lat, to_lon);
-    if from_coords.is_err() || to_coords.is_err() {
-        ApiResponse::error(Status::BadRequest, "Invalid coordinates provided.")
-    } else {
-        let from_coords: LatLon = from_coords.unwrap();
-        let to_coords: LatLon = to_coords.unwrap();
-        let from_coords: String = format!("{};{}", from_coords.longitude(), from_coords.latitude());
-        let to_coords: String = format!("{};{}", to_coords.longitude(), to_coords.latitude());
-
-        let client = RatpClient::new();
-        match client.fetch_journey(from_coords, to_coords).await {
-            Ok(response) => {
-                let simplified_response = json!({
-                    "journeys": response.journeys.iter().map(|journey| {
-                        json!({
-                            "duration": journey.duration,
-                            "sections": journey.sections.iter().filter(|section| section.type_ != "waiting").map(|section| {
-                                let from_place = extract_place_info(&section.from);
-                                let to_place = extract_place_info(&section.to);
-
-                                json!({
-                                    "duration": section.duration,
-                                    "departure_date_time": section.departure_date_time,
-                                    "arrival_date_time": section.arrival_date_time,
-                                    "from": from_place,
-                                    "to": to_place,
-                                    "type": section.type_})
-                            }).collect::<Vec<_>>()
-                        })
-                    }).collect::<Vec<_>>()
-                });
-                ApiResponse::success(simplified_response)
-            }
-            Err(e) => ApiResponse::error(
-                Status::InternalServerError,
-                &format!("Failed to fetch journey: {}", e),
-            ),
-        }
+    let client = RatpClient::new();
+    match client.fetch_journey(from_coords, to_coords).await {
+        Ok(response) => ApiResponse::success(transform_journey_response(&response)),
+        Err(e) => JourneyError::RatpError(e.to_string()).into(),
     }
 }
 
@@ -101,7 +144,7 @@ pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value
 ///
 /// # Returns
 /// * A JSON object containing the place information.
-fn extract_place_info(place: &Option<Place>) -> Value {
+fn extract_place_info(place: Option<&Place>) -> Value {
     match place {
         Some(place) => {
             let is_stop_point = place.embedded_type == "stop_point";
