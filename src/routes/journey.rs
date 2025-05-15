@@ -82,8 +82,8 @@ fn transform_journey_response(response: &JourneyResponse) -> Value {
                     .iter()
                     .filter(|section| section.type_ != "waiting")
                     .map(|section| {
-                        let from_place = extract_place_info(Option::from(&section.from));
-                        let to_place = extract_place_info(Option::from(&section.to));
+                        let from_place = extract_place_info(section.from.as_ref());
+                        let to_place = extract_place_info(section.to.as_ref());
 
                         json!({
                             "duration": section.duration,
