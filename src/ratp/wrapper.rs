@@ -50,8 +50,6 @@ use crate::{models::JourneyResponse, url::Url};
 ///
 /// * `client` - The underlying HTTP client for making requests
 /// * `base_url` - The base URL for all API endpoints
-/// * `api_key` - The authentication key for API access
-#[allow(dead_code)] // TODO: REMOVE WHEN IMPLEMENTED.
 pub struct RatpClient {
     /// HTTP client instance from reqwest
     client: Client,
@@ -117,9 +115,9 @@ impl RatpClient {
     ///
     /// * `from` - The origin location identifier, which can be:
     ///   - Coordinates in format "lon;lat" (e.g. "2.3567;48.8569")
-    ///   - Stop point ID in format "stop_point:IDFM:XXXX"
-    ///   - Stop area ID in format "stop_area:IDFM:XXXX"
-    ///   - Point of Interest ID in format "poi:IDFM:XXXX"
+    ///   - Stop point ID in format "`stop_point:IDFM:XXXX`"
+    ///   - Stop area ID in format "`stop_area:IDFM:XXXX`"
+    ///   - Point of Interest ID in format "`poi:IDFM:XXXX`"
     /// * `to` - The destination location identifier, in the same format options as `from`
     ///
     /// # Returns
@@ -158,12 +156,15 @@ impl RatpClient {
         let mut params: HashMap<String, String> = HashMap::new();
         params.insert("from".to_string(), from);
         params.insert("to".to_string(), to);
+
         let url = Url::new(self.base_url)
             .add_path("navitia")
             .add_path("journeys")
             .add_args(params)
             .build();
+
         let response = self.client.get(&url).send().await?.error_for_status()?;
+
         response.json::<JourneyResponse>().await
     }
 }
