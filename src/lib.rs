@@ -1,8 +1,8 @@
-/// # Database Connection Pool
-/// Provides a PostgreSQL connection pool using rocket_sync_db_pools.
-/// This struct is used throughout the application to interact with the database.
-#[rocket_sync_db_pools::database("postgres_database")]
-pub struct DbConn(diesel::PgConnection);
+use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::PgConnection;
+
+/// Database connection pool type for `PostgreSQL` using r2d2
+pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
 pub mod api_response;
 pub mod models;
