@@ -24,13 +24,28 @@ pub struct Section {
     pub to: Option<Place>,
     #[serde(rename = "type")]
     pub type_: String,
+    #[serde(default)]
+    pub geojson: Option<GeoJson>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GeoJson {
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub coordinates: Vec<Vec<f64>>,
+    pub properties: Vec<GeoJsonProperty>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GeoJsonProperty {
+    pub length: i32,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Place {
     pub name: String,
     pub embedded_type: String,
-    #[serde(default)] // To retrieve the coordinates when it's a stop point
+    #[serde(default)]
     pub address: Option<Address>,
     #[serde(default)]
     pub stop_point: Option<StopPoint>,

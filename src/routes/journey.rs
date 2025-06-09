@@ -82,14 +82,26 @@ fn transform_journey_response(response: &JourneyResponse) -> Value {
                         let from_place = extract_place_info(section.from.as_ref());
                         let to_place = extract_place_info(section.to.as_ref());
 
-                        json!({
+                        let mut section_json = json!({
                             "duration": section.duration,
                             "departure_date_time": section.departure_date_time,
                             "arrival_date_time": section.arrival_date_time,
                             "from": from_place,
                             "to": to_place,
                             "type": section.type_
-                        })
+                        });
+
+                        if let Some(geojson) = &section.geojson {
+                            section_json["geojson"] = json!({
+                                "type": geojson.type_,
+                                "coordinates": geojson.coordinates,
+                                "properties": geojson.properties.iter().map(|prop| {
+                                    json!({ "length": prop.length })
+                                }).collect::<Vec<_>>()
+                            });
+                        }
+
+                        section_json
                     })
                     .collect::<Vec<_>>()
             })
