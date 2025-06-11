@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
 
     // Get database URL from environment or use default
-    let database_url = env::var("DATABASE_URL").unwrap();
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL environment variable is missing or invalid");
 
     // Create database connection pool
     let manager = ConnectionManager::<PgConnection>::new(database_url);
