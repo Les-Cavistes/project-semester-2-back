@@ -50,6 +50,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get database URL from environment or use default
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL environment variable is missing or invalid");
 
+    // Get server configuration from environment or use defaults
+    let server_host = env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let server_port = env::var("SERVER_PORT").unwrap_or_else(|_| "8000".to_string());
+    let server_addr = format!("{server_host}:{server_port}");
+
+    // Get CORS configuration from environment or use default
+    let allowed_origins = env::var("CORS_ALLOWED_ORIGIN")
+        .unwrap_or_else(|_| "http://localhost:5173".to_string())
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .filter_map(|origin| origin.parse::<axum::http::HeaderValue>().ok())
+        .collect::<Vec<_>>();
+
     // Create database connection pool
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool = Pool::builder().build(manager)?;
@@ -57,9 +71,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run migrations
     run_migrations(&pool).await?;
 
-    // Configure CORS
-    let cors =
-        CorsLayer::new().allow_origin("http://localhost:5173".parse::<axum::http::HeaderValue>()?);
+    // Configure CORS with multiple allowed origins
+    let mut cors = CorsLayer::new();
+    for origin in allowed_origins {
+        cors = cors.allow_origin(origin);
+    }
 
     // Build our application with routes
     let app = Router::new()
@@ -72,8 +88,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(pool);
 
     // Run the server
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8000").await?;
-    println!("Server running on http://127.0.0.1:8000");
+    println!("Server running on http://{server_addr}");
+    let listener = tokio::net::TcpListener::bind(&server_addr).await?;
     axum::serve(listener, app).await?;
 
     Ok(())

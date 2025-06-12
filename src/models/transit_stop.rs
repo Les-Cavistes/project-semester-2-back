@@ -1,5 +1,7 @@
-use crate::paginated::{Paginate, PaginationResult};
-use diesel::r2d2::{ConnectionManager, PooledConnection};
+use crate::{
+    paginated::{Paginate, PaginationResult},
+    ProjectPooledConnection,
+};
 
 use crate::schema::transit_stop;
 use diesel::{
@@ -54,7 +56,7 @@ impl TransitStop {
     /// * `String` - The ID of the newly created transit stop
     pub fn insert(
         transit_stop: &NewTransitStop,
-        conn: &mut PooledConnection<ConnectionManager<diesel::PgConnection>>,
+        conn: &mut ProjectPooledConnection,
     ) -> QueryResult<String> {
         let id = transit_stop.id.clone();
 
@@ -80,7 +82,7 @@ impl TransitStop {
     pub fn all(
         page: i64,
         per_page: i64,
-        conn: &mut PooledConnection<ConnectionManager<diesel::PgConnection>>,
+        conn: &mut ProjectPooledConnection,
     ) -> QueryResult<PaginationResult<TransitStop>> {
         transit_stop::table
             .order(transit_stop::id)
@@ -107,7 +109,7 @@ impl TransitStop {
         query: &str,
         page: i64,
         per_page: i64,
-        conn: &mut PooledConnection<ConnectionManager<diesel::PgConnection>>,
+        conn: &mut ProjectPooledConnection,
     ) -> QueryResult<PaginationResult<TransitStop>> {
         let base_query = if query.is_empty() {
             transit_stop::table.into_boxed()
