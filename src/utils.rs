@@ -29,11 +29,7 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 /// This function will return a `DieselError` if:
 /// * Failed to get a connection from the pool
 /// * The provided operation returns an error
-///
-/// # Panics
-/// This function will panic if:
-/// * The spawned blocking task fails to complete
-/// * The task join handle is dropped before completion
+/// * The blocking task fails to complete (mapped from `JoinError`)
 ///
 /// # Example
 /// ```no-run
@@ -56,5 +52,10 @@ where
         operation(&mut conn)
     })
     .await
-    .unwrap()
+    .map_err(|e| {
+        DieselError::DatabaseError(
+            DatabaseErrorKind::Unknown,
+            Box::new(format!("Task join error: {e}")),
+        )
+    })?
 }
