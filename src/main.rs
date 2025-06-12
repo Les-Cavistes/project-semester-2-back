@@ -52,13 +52,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         env::var("DATABASE_URL").expect("DATABASE_URL environment variable is missing or invalid");
 
     // Get server configuration from environment or use defaults
-    let server_host = env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let server_port = env::var("SERVER_PORT").unwrap_or_else(|_| "8000".to_string());
+    let server_host =
+        env::var("SERVER_HOST").expect("SERVER_HOST environment variable is missing or invalid");
+    let server_port =
+        env::var("SERVER_PORT").expect("SERVER_PORT environment variable is missing or invalid");
     let server_addr = format!("{server_host}:{server_port}");
 
     // Get CORS configuration from environment or use default
     let allowed_origins = env::var("CORS_ALLOWED_ORIGIN")
-        .unwrap_or_else(|_| "http://localhost:5173".to_string())
+        .expect("CORS_ALLOWED_ORIGIN environment variable is missing or invalid")
         .split(',')
         .map(str::trim)
         .filter(|s| !s.is_empty())
