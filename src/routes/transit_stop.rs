@@ -2,6 +2,7 @@ use crate::{
     api_response::ApiResponse,
     models::{NewTransitStop, TransitStop},
     paginated::set_pagination_defaults,
+    utils::execute_blocking_db_operation,
     DbPool,
 };
 use axum::{
@@ -18,30 +19,15 @@ use serde_json::{json, Value};
 /// * `State(pool)` - Database connection pool
 /// * `Json(transit_stop)` - The `transit_stop` to create
 ///
-/// # Panics
-/// * This function panics if the spawned blocking task fails to complete.
-///
 /// # Returns
 /// * `(StatusCode, Json<Value>)` - The status code and JSON response containing the created `transit_stop` or an error message
 pub async fn transit_stop_create(
     State(pool): State<DbPool>,
     Json(transit_stop): Json<NewTransitStop>,
 ) -> (StatusCode, Json<Value>) {
-    let result = {
-        let pool = pool.clone();
-
-        tokio::task::spawn_blocking(move || {
-            let mut conn = pool.get().map_err(|e| {
-                diesel::result::Error::DatabaseError(
-                    diesel::result::DatabaseErrorKind::Unknown,
-                    Box::new(e.to_string()),
-                )
-            })?;
-            TransitStop::insert(&transit_stop, &mut conn)
-        })
-        .await
-        .unwrap()
-    };
+    let result =
+        execute_blocking_db_operation(pool, move |conn| TransitStop::insert(&transit_stop, conn))
+            .await;
 
     match result {
         Ok(transit_stop) => (
@@ -73,9 +59,6 @@ pub struct PaginationQuery {
 /// * `State(pool)` - Database connection pool
 /// * `Query(params)` - Query parameters for pagination
 ///
-/// # Panics
-/// * This function panics if the spawned blocking task fails to complete.
-///
 /// # Returns
 /// * `Json<Value>` - JSON response containing the retrieved `transit_stops` or an error message
 pub async fn transit_stop_get(
@@ -84,22 +67,9 @@ pub async fn transit_stop_get(
 ) -> Json<Value> {
     let (page, per_page) = set_pagination_defaults(params.page, params.per_page);
 
-    let result = {
-        let pool = pool.clone();
-
-        tokio::task::spawn_blocking(move || {
-            let mut conn = pool.get().map_err(|e| {
-                diesel::result::Error::DatabaseError(
-                    diesel::result::DatabaseErrorKind::Unknown,
-                    Box::new(e.to_string()),
-                )
-            })?;
-
-            TransitStop::all(page, per_page, &mut conn)
-        })
-        .await
-        .unwrap()
-    };
+    let result =
+        execute_blocking_db_operation(pool, move |conn| TransitStop::all(page, per_page, conn))
+            .await;
 
     match result {
         Ok(transit_stop) => ApiResponse::success(json!({
@@ -123,9 +93,6 @@ pub struct SearchQuery {
 /// * `State(pool)` - Database connection pool
 /// * `Query(params)` - Query parameters for search and pagination
 ///
-/// # Panics
-/// * This function panics if the spawned blocking task fails to complete.
-///
 /// # Returns
 /// * `Json<Value>` - JSON response containing the search results or an error message
 pub async fn transit_stop_search(
@@ -135,22 +102,10 @@ pub async fn transit_stop_search(
     let query = params.query.unwrap_or_default();
     let (page, per_page) = set_pagination_defaults(params.page, params.per_page);
 
-    let result = {
-        let pool = pool.clone();
-
-        tokio::task::spawn_blocking(move || {
-            let mut conn = pool.get().map_err(|e| {
-                diesel::result::Error::DatabaseError(
-                    diesel::result::DatabaseErrorKind::Unknown,
-                    Box::new(e.to_string()),
-                )
-            })?;
-
-            TransitStop::search(&query, page, per_page, &mut conn)
-        })
-        .await
-        .unwrap()
-    };
+    let result = execute_blocking_db_operation(pool, move |conn| {
+        TransitStop::search(&query, page, per_page, conn)
+    })
+    .await;
 
     match result {
         Ok(transit_stops) => ApiResponse::success(json!({
