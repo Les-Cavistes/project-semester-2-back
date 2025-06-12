@@ -48,7 +48,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
 
     // Get database URL from environment or use default
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL environment variable is missing or invalid");
+    let database_url =
+        env::var("DATABASE_URL").expect("DATABASE_URL environment variable is missing or invalid");
 
     // Get server configuration from environment or use defaults
     let server_host = env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
