@@ -11,7 +11,6 @@ use back::{
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use dotenv::dotenv;
 use serde_json::{json, Value};
 use std::env;
 use tower::ServiceBuilder;
@@ -48,6 +47,7 @@ async fn root() -> Json<Value> {
 /// Sets up database connection, runs migrations, configures CORS, and defines routes.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load environment variables
     dotenvy::dotenv().ok();
 
     // Check if the required environment variables are set
@@ -59,9 +59,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with(EnvFilter::new(trace_filter))
         .with(tracing_subscriber::fmt::layer())
         .init();
-
-    // Load environment variables
-    dotenv().ok();
 
     // Get database URL from environment or use default
     let database_url =
@@ -106,8 +103,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .layer(ServiceBuilder::new().layer(cors))
         .layer(
             TraceLayer::new_for_http()
-                .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
-                .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
+                .make_span_with(
+                    trace::DefaultMakeSpan::new()
+                        .level(Level::INFO)
+                        .include_headers(false),
+                )
+                .on_response(
+                    trace::DefaultOnResponse::new()
+                        .level(Level::INFO)
+                        .include_headers(false),
+                )
+                .on_request(trace::DefaultOnRequest::new().level(Level::INFO))
+                .on_failure(trace::DefaultOnFailure::new().level(Level::ERROR)),
         )
         .with_state(pool);
 

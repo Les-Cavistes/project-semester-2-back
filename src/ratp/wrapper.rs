@@ -34,12 +34,10 @@
 //! - `dotenv`: For loading environment variables from `.env` file
 //! - `reqwest`: For making HTTP requests
 
-use std::collections::HashMap;
-
-use dotenv::dotenv;
-use reqwest::{header, Client};
-
 use crate::{models::JourneyResponse, url::Url};
+
+use reqwest::{header, Client};
+use std::collections::HashMap;
 
 /// A client wrapper for the RATP/Île-de-France Mobilités API.
 ///
@@ -85,8 +83,6 @@ impl RatpClient {
     /// ```
     #[must_use]
     pub fn new() -> Self {
-        dotenv().ok();
-
         let api_key =
             std::env::var("RATP_API_KEY").expect("RATP_API_KEY environment variable is not set");
 
