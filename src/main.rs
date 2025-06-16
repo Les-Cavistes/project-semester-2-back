@@ -16,6 +16,10 @@ use serde_json::{json, Value};
 use std::env;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
+use tower_http::trace;
+use tower_http::trace::TraceLayer;
+use tracing::Level;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// Runs database migrations on application startup.
 /// This ensures the database schema is up to date before the application begins serving requests.
@@ -44,6 +48,18 @@ async fn root() -> Json<Value> {
 /// Sets up database connection, runs migrations, configures CORS, and defines routes.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenvy::dotenv().ok();
+
+    // Check if the required environment variables are set
+    let trace_filter =
+        env::var("RUST_LOG").expect("RUST_LOG environment variable is missing or invalid");
+
+    // Initialize tracing
+    tracing_subscriber::registry()
+        .with(EnvFilter::new(trace_filter))
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
     // Load environment variables
     dotenv().ok();
 
@@ -88,6 +104,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/transit_stop/search", get(transit_stop_search))
         .route("/journey", get(journey_get))
         .layer(ServiceBuilder::new().layer(cors))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
+        )
         .with_state(pool);
 
     // Run the server
