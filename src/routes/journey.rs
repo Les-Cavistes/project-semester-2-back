@@ -1,7 +1,8 @@
 use crate::models::JourneyResponse;
 use crate::{api_response::ApiResponse, models::Place, ratp::RatpClient};
+use axum::{extract::Query, response::Json};
 use geoconvert::LatLon;
-use rocket::{get, http::Status, serde::json::Json};
+use serde::Deserialize;
 use serde_json::{json, Value};
 
 /// Represents possible errors that can occur during journey processing
@@ -17,25 +18,21 @@ enum JourneyError {
 impl From<JourneyError> for Json<Value> {
     fn from(error: JourneyError) -> Self {
         match error {
-            JourneyError::MissingParameters => ApiResponse::error(
-                Status::BadRequest,
-                "Both 'from' and 'to' parameters are required.",
-            ),
-            JourneyError::InvalidCoordinateFormat => ApiResponse::error(
-                Status::BadRequest,
-                "Coordinates must be in format 'longitude;latitude'",
-            ),
-            JourneyError::InvalidCoordinateValues => ApiResponse::error(
-                Status::BadRequest,
-                "Invalid coordinate values. Must be valid numbers.",
-            ),
-            JourneyError::InvalidCoordinates => {
-                ApiResponse::error(Status::BadRequest, "Invalid coordinates provided.")
+            JourneyError::MissingParameters => {
+                ApiResponse::bad_request("Both 'from' and 'to' parameters are required.")
             }
-            JourneyError::RatpError(msg) => ApiResponse::error(
-                Status::InternalServerError,
-                &format!("Failed to fetch journey: {msg}"),
-            ),
+            JourneyError::InvalidCoordinateFormat => {
+                ApiResponse::bad_request("Coordinates must be in format 'longitude;latitude'")
+            }
+            JourneyError::InvalidCoordinateValues => {
+                ApiResponse::bad_request("Invalid coordinate values. Must be valid numbers.")
+            }
+            JourneyError::InvalidCoordinates => {
+                ApiResponse::bad_request("Invalid coordinates provided.")
+            }
+            JourneyError::RatpError(msg) => {
+                ApiResponse::internal_error(&format!("Failed to fetch journey: {msg}"))
+            }
         }
     }
 }
@@ -112,19 +109,24 @@ fn transform_journey_response(response: &JourneyResponse) -> Value {
     })
 }
 
+/// Query parameters for journey requests
+#[derive(Deserialize)]
+pub struct JourneyQuery {
+    from: Option<String>,
+    to: Option<String>,
+}
+
 /// Handles journey-related routes for the RATP API.
 /// Provides an endpoint to fetch journey information based on coordinates.
 ///
 /// # Arguments
-/// * `from` - Starting coordinates in format "longitude;latitude"
-/// * `to` - Destination coordinates in format "longitude;latitude"
+/// * `Query(params)` - Query parameters containing 'from' and 'to' coordinates
 ///
 /// # Returns
 /// JSON response containing journey information or error message
-#[get("/?<from>&<to>")]
-pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value> {
-    let from = from.unwrap_or_default();
-    let to = to.unwrap_or_default();
+pub async fn journey_get(Query(params): Query<JourneyQuery>) -> Json<Value> {
+    let from = params.from.unwrap_or_default();
+    let to = params.to.unwrap_or_default();
 
     if from.is_empty() || to.is_empty() {
         return JourneyError::MissingParameters.into();
@@ -141,6 +143,7 @@ pub async fn journey_get(from: Option<String>, to: Option<String>) -> Json<Value
     };
 
     let client = RatpClient::new();
+
     match client.fetch_journey(from_coords, to_coords).await {
         Ok(response) => ApiResponse::success(transform_journey_response(&response)),
         Err(e) => JourneyError::RatpError(e.to_string()).into(),
