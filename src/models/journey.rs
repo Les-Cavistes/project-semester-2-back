@@ -26,6 +26,43 @@ pub struct Section {
     pub type_: String,
     #[serde(default)]
     pub geojson: Option<GeoJson>,
+    // Add display_informations field for transport info
+    #[serde(default)]
+    pub display_informations: Option<DisplayInformations>,
+    // Add stop_date_times for detailed stop information
+    #[serde(default)]
+    pub stop_date_times: Option<Vec<StopDateTime>>,
+}
+
+// New struct for transport display information
+#[derive(Debug, Deserialize)]
+pub struct DisplayInformations {
+    pub commercial_mode: String,
+    pub network: String,
+    pub direction: String,
+    pub label: String,
+    pub color: String,
+    pub code: String,
+    pub headsign: String,
+    pub name: String,
+    pub text_color: String,
+    pub trip_short_name: String,
+    pub description: String,
+    pub physical_mode: String,
+}
+
+// New struct for stop date times
+#[derive(Debug, Deserialize)]
+pub struct StopDateTime {
+    pub stop_point: StopPointInfo,
+    pub departure_date_time: Option<String>,
+    pub arrival_date_time: Option<String>,
+}
+
+// New struct for stop point information (different from Place's StopPoint)
+#[derive(Debug, Deserialize)]
+pub struct StopPointInfo {
+    pub name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -48,11 +85,11 @@ pub struct Place {
     #[serde(default)]
     pub address: Option<Address>,
     #[serde(default)]
-    pub stop_point: Option<StopPoint>,
+    pub stop_point: Option<PlaceStopPoint>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct StopPoint {
+pub struct PlaceStopPoint {
     pub id: String,
     pub address: Address,
 }
