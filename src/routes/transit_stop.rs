@@ -1,5 +1,5 @@
 use crate::{
-    api_response::ApiResponse,
+    api_response::{ApiResponse, ApiResult},
     models::{NewTransitStop, TransitStop},
     paginated::set_pagination_defaults,
     utils::execute_blocking_db_operation,
@@ -7,11 +7,10 @@ use crate::{
 };
 use axum::{
     extract::{Query, State},
-    http::StatusCode,
     response::Json,
 };
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::json;
 
 /// Handles POST requests to create a new `transit_stop`.
 ///
@@ -20,29 +19,21 @@ use serde_json::{json, Value};
 /// * `Json(transit_stop)` - The `transit_stop` to create
 ///
 /// # Returns
-/// * `(StatusCode, Json<Value>)` - The status code and JSON response containing the created `transit_stop` or an error message
+/// * `ApiResult` - The response containing the created `transit_stop` or an error message
 pub async fn transit_stop_create(
     State(pool): State<DbPool>,
     Json(transit_stop): Json<NewTransitStop>,
-) -> (StatusCode, Json<Value>) {
+) -> ApiResult {
     let result =
         execute_blocking_db_operation(pool, move |conn| TransitStop::insert(&transit_stop, conn))
             .await;
 
     match result {
-        Ok(transit_stop) => (
-            StatusCode::CREATED,
-            Json(json!({
-                "message": "Successfully created transit_stop",
-                "transit_stop": transit_stop
-            })),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "message": format!("Failed to create transit_stop: {e}")
-            })),
-        ),
+        Ok(transit_stop) => ApiResponse::created(json!({
+            "message": "Successfully created transit_stop",
+            "transit_stop": transit_stop
+        })),
+        Err(e) => ApiResponse::internal_error(&format!("Failed to create transit_stop: {e}")),
     }
 }
 
@@ -60,11 +51,11 @@ pub struct PaginationQuery {
 /// * `Query(params)` - Query parameters for pagination
 ///
 /// # Returns
-/// * `Json<Value>` - JSON response containing the retrieved `transit_stops` or an error message
+/// * `ApiResult` - The response containing the retrieved `transit_stops` or an error message
 pub async fn transit_stop_get(
     State(pool): State<DbPool>,
     Query(params): Query<PaginationQuery>,
-) -> Json<Value> {
+) -> ApiResult {
     let (page, per_page) = set_pagination_defaults(params.page, params.per_page);
 
     let result =
@@ -94,11 +85,11 @@ pub struct SearchQuery {
 /// * `Query(params)` - Query parameters for search and pagination
 ///
 /// # Returns
-/// * `Json<Value>` - JSON response containing the search results or an error message
+/// * `ApiResult` - The response containing the search results or an error message
 pub async fn transit_stop_search(
     State(pool): State<DbPool>,
     Query(params): Query<SearchQuery>,
-) -> Json<Value> {
+) -> ApiResult {
     let query = params.query.unwrap_or_default();
     let (page, per_page) = set_pagination_defaults(params.page, params.per_page);
 
