@@ -1,14 +1,6 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    tasks (id) {
-        id -> Int4,
-        description -> Varchar,
-        completed -> Bool,
-    }
-}
-
-diesel::table! {
     transit_stop (id, route_id) {
         #[max_length = 50]
         id -> Varchar,
@@ -30,5 +22,3 @@ diesel::table! {
         mode -> Varchar,
     }
 }
-
-diesel::allow_tables_to_appear_in_same_query!(tasks, transit_stop,);
