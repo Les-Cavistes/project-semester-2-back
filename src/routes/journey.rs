@@ -75,6 +75,8 @@ fn transform_journey_response(response: &JourneyResponse) -> Value {
         "journeys": response.journeys.iter().map(|journey| {
             json!({
                 "duration": journey.duration,
+                "departure_date_time": journey.departure_date_time,
+                "arrival_date_time": journey.arrival_date_time,
                 "sections": journey.sections
                     .iter()
                     .filter(|section| section.type_ != "waiting")
@@ -91,6 +93,40 @@ fn transform_journey_response(response: &JourneyResponse) -> Value {
                             "type": section.type_
                         });
 
+                        // Add transport information if available (for public_transport sections)
+                        if let Some(display_info) = &section.display_informations {
+                            section_json["transport"] = json!({
+                                "mode": display_info.commercial_mode,
+                                "network": display_info.network,
+                                "line": {
+                                    "code": display_info.code,
+                                    "name": display_info.name,
+                                    "label": display_info.label,
+                                    "color": display_info.color,
+                                    "text_color": display_info.text_color
+                                },
+                                "direction": display_info.direction,
+                                "headsign": display_info.headsign,
+                                "physical_mode": display_info.physical_mode
+                            });
+                        }
+
+                        // Add stop date times if available
+                        if let Some(stop_times) = &section.stop_date_times {
+                            section_json["stop_date_times"] = json!(
+                                stop_times.iter().map(|stop| {
+                                    json!({
+                                        "stop_point": {
+                                            "name": stop.stop_point.name
+                                        },
+                                        "departure_date_time": stop.departure_date_time,
+                                        "arrival_date_time": stop.arrival_date_time
+                                    })
+                                }).collect::<Vec<_>>()
+                            );
+                        }
+
+                        // Add geojson if available
                         if let Some(geojson) = &section.geojson {
                             section_json["geojson"] = json!({
                                 "type": geojson.type_,
