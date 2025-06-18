@@ -1,6 +1,10 @@
 use crate::models::JourneyResponse;
-use crate::{api_response::ApiResponse, models::Place, ratp::RatpClient};
-use axum::{extract::Query, response::Json};
+use crate::{
+    api_response::{ApiResponse, ApiResult},
+    models::Place,
+    ratp::RatpClient,
+};
+use axum::{extract::Query, http::StatusCode, response::Json};
 use geoconvert::LatLon;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -15,7 +19,7 @@ enum JourneyError {
     RatpError(String),
 }
 
-impl From<JourneyError> for Json<Value> {
+impl From<JourneyError> for ApiResult {
     fn from(error: JourneyError) -> Self {
         match error {
             JourneyError::MissingParameters => {
@@ -124,7 +128,7 @@ pub struct JourneyQuery {
 ///
 /// # Returns
 /// JSON response containing journey information or error message
-pub async fn journey_get(Query(params): Query<JourneyQuery>) -> Json<Value> {
+pub async fn journey_get(Query(params): Query<JourneyQuery>) -> (StatusCode, Json<Value>) {
     let from = params.from.unwrap_or_default();
     let to = params.to.unwrap_or_default();
 

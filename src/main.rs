@@ -1,17 +1,16 @@
 use axum::{
-    response::Json,
     routing::{get, post},
     Router,
 };
 use back::{
-    api_response::ApiResponse,
+    api_response::{ApiResponse, ApiResult},
     routes::{journey_get, transit_stop_create, transit_stop_get, transit_stop_search},
     DbPool,
 };
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use serde_json::{json, Value};
+use serde_json::json;
 use std::env;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -37,7 +36,7 @@ async fn run_migrations(pool: &DbPool) -> Result<(), Box<dyn std::error::Error>>
 
 /// Handles GET requests to the root path ("/").
 /// Serves as a simple health check endpoint.
-async fn root() -> Json<Value> {
+async fn root() -> ApiResult {
     ApiResponse::success(json!({
         "message": "Hello, Axum!"
     }))
@@ -119,7 +118,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(pool);
 
     // Run the server
-    println!("Server running on http://{server_addr}");
+    println!("Server running on {server_addr}");
     let listener = tokio::net::TcpListener::bind(&server_addr).await?;
     axum::serve(listener, app).await?;
 
