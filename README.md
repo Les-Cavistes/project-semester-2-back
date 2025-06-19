@@ -19,31 +19,69 @@ hooksmith install
 
 ```
 back/src/
-├── lib.rs           # Core database configuration and constants
-├── main.rs          # Application entry point and server configuration
-├── models/          # Data models and database operations
+├── api_response.rs  # Standardized API response handling
+├── lib.rs          # Core database configuration and constants
+├── main.rs         # Application entry point and server configuration
+├── models/         # Data models and database operations
+│   ├── journey.rs  # Journey-related models
 │   ├── mod.rs
 │   └── transit_stop.rs
-├── paginated.rs     # Custom pagination implementation
-├── routes/          # API endpoints
+├── paginated.rs    # Custom pagination implementation
+├── ratp/          # RATP API client wrapper
+│   ├── mod.rs
+│   └── wrapper.rs
+├── routes/         # API endpoints
+│   ├── journey.rs
 │   ├── mod.rs
 │   └── transit_stop.rs
-└── schema.rs        # Database schema definitions
+├── schema.rs       # Database schema definitions
+└── url.rs         # URL builder for API requests
 ```
 
 ## Key Components
 
 ### Database Layer
-- Uses Diesel ORM with SQLite
-- Implements connection pooling via rocket_sync_db_pools
+- Uses Diesel ORM with PostgreSQL
+- Implements connection pooling via r2d2
 - Includes automated migration support
 - Schema defined for transit stops with comprehensive fields
 
 ### API Endpoints
-- `POST /transit_stop/` - Create new transit stop
+- `POST /transit_stop` - Create new transit stop
+- `GET /transit_stop` - Get all transit stops with pagination
 - `GET /transit_stop/search` - Search transit stops with pagination
+- `GET /journey` - Get journey information between two points
 - Root endpoint for health checks
 - CORS support for local development
+
+### Response Format
+
+All API responses follow a consistent format:
+
+For successful responses (2xx):
+```json
+{
+  "data": {
+    // Response data here
+  }
+}
+```
+
+For error responses (4xx, 5xx):
+```json
+{
+  "error": {
+    "message": "Error description"
+  }
+}
+```
+
+HTTP status codes are used appropriately:
+- 200: Successful GET/Search operations
+- 201: Successful resource creation
+- 400: Bad request (invalid input)
+- 404: Resource not found
+- 500: Internal server error
 
 ### Complex Features
 
@@ -61,10 +99,14 @@ Transit stop search supports:
 - Paginated results
 - Proper error handling
 
-#### Error Handling
-- Consistent JSON response format
-- Proper HTTP status codes
-- Detailed error messages for debugging
+#### Journey Planning
+- Integration with RATP/Île-de-France Mobilités API
+- Support for coordinates-based routing
+- Detailed journey information including:
+  - Multiple route options
+  - Step-by-step navigation
+  - Geolocation data
+  - Timing information
 
 ## Configuration
 
@@ -73,10 +115,21 @@ Key constants:
 - `DEFAULT_PER_PAGE`: 10 (Default items per page)
 - `DEFAULT_PAGE`: 1 (Default page number)
 
+Environment variables:
+- `DATABASE_URL`: PostgreSQL connection string
+- `SERVER_HOST`: Server host address
+- `SERVER_PORT`: Server port number
+- `CORS_ALLOWED_ORIGIN`: Comma-separated list of allowed origins
+- `RATP_API_KEY`: API key for RATP services
+- `RUST_LOG`: Logging level configuration
+
 ## Dependencies
 
 Major dependencies:
-- Rocket: Web framework
+- Axum: Web framework
 - Diesel: ORM and query builder
 - PostgreSQL: Database
 - Serde: Serialization/Deserialization
+- Tower: Middleware support
+- Tokio: Async runtime
+- Reqwest: HTTP client for external API calls
