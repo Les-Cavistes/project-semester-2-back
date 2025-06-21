@@ -1,12 +1,12 @@
 use axum::{http::StatusCode, response::Json};
 use serde_json::{json, Value};
 
+/// Type alias for our standard API response
+pub type ApiResult = (StatusCode, Json<Value>);
+
 /// Represents a standardized API response
 #[derive(Debug)]
-pub struct ApiResponse {
-    pub status: StatusCode,
-    pub json: Value,
-}
+pub struct ApiResponse;
 
 impl ApiResponse {
     /// # `base`
@@ -17,13 +17,14 @@ impl ApiResponse {
     /// * `json` - The JSON value to include in the response
     ///
     /// ## Returns
-    /// * `Json<Value>` containing the response data
-    pub fn base(status: StatusCode, json: &Value) -> Json<Value> {
-        Json(json!({
-            "status": status.as_u16(),
-            "success": status.is_success(),
-            "data": json
-        }))
+    /// * `ApiResult` containing the response data
+    pub fn base(status: StatusCode, json: &Value) -> ApiResult {
+        (
+            status,
+            Json(json!({
+                "data": json
+            })),
+        )
     }
 
     /// # `success`
@@ -33,8 +34,8 @@ impl ApiResponse {
     /// * `data` - The data to include in the response
     ///
     /// ## Returns
-    /// * `Json<Value>` containing the response data
-    pub fn success(data: impl Into<Value>) -> Json<Value> {
+    /// * `ApiResult` containing the response data
+    pub fn success(data: impl Into<Value>) -> ApiResult {
         Self::base(StatusCode::OK, &data.into())
     }
 
@@ -45,8 +46,8 @@ impl ApiResponse {
     /// * `data` - The data to include in the response
     ///
     /// ## Returns
-    /// * `Json<Value>` containing the response data
-    pub fn created(data: impl Into<Value>) -> Json<Value> {
+    /// * `ApiResult` containing the response data
+    pub fn created(data: impl Into<Value>) -> ApiResult {
         Self::base(StatusCode::CREATED, &data.into())
     }
 
@@ -58,15 +59,16 @@ impl ApiResponse {
     /// * `message` - The error message
     ///
     /// ## Returns
-    /// * `Json<Value>` containing the error response data
-    pub fn error(status: StatusCode, message: &str) -> Json<Value> {
-        Json(json!({
-            "status": status.as_u16(),
-            "success": false,
-            "error": {
-                "message": message
-            }
-        }))
+    /// * `ApiResult` containing the error response data
+    pub fn error(status: StatusCode, message: &str) -> ApiResult {
+        (
+            status,
+            Json(json!({
+                "error": {
+                    "message": message
+                }
+            })),
+        )
     }
 
     /// # `bad_request`
@@ -76,8 +78,8 @@ impl ApiResponse {
     /// * `message` - The error message
     ///
     /// ## Returns
-    /// * `Json<Value>` containing the error response data
-    pub fn bad_request(message: &str) -> Json<Value> {
+    /// * `ApiResult` containing the error response data
+    pub fn bad_request(message: &str) -> ApiResult {
         Self::error(StatusCode::BAD_REQUEST, message)
     }
 
@@ -88,8 +90,8 @@ impl ApiResponse {
     /// * `message` - The error message
     ///
     /// ## Returns
-    /// * `Json<Value>` containing the error response data
-    pub fn not_found(message: &str) -> Json<Value> {
+    /// * `ApiResult` containing the error response data
+    pub fn not_found(message: &str) -> ApiResult {
         Self::error(StatusCode::NOT_FOUND, message)
     }
 
@@ -100,8 +102,8 @@ impl ApiResponse {
     /// * `message` - The error message
     ///
     /// ## Returns
-    /// * `Json<Value>` containing the error response data
-    pub fn internal_error(message: &str) -> Json<Value> {
+    /// * `ApiResult` containing the error response data
+    pub fn internal_error(message: &str) -> ApiResult {
         Self::error(StatusCode::INTERNAL_SERVER_ERROR, message)
     }
 }
