@@ -239,7 +239,7 @@ mod tests {
 
     #[test]
     fn test_error_message_unicode() {
-        let message = "Erreur avec des caractères unicode: éàü";
+        let message = "Test with unicode: éàü";
         let (status, Json(response)) = ApiResponse::internal_error(message);
 
         assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
