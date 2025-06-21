@@ -49,7 +49,7 @@ content:
 
 * Content-Type: application/json
 
-* Error message: `Coordinates must be in format 'longitude;latitude`
+* Error message: `Coordinates must be in format 'longitude;latitude'`
 
 ## Assertions
 
