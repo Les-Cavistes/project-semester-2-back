@@ -21,8 +21,8 @@ pub struct TransitStop {
     pub stop_lon: f32,
     pub stop_lat: f32,
     pub shortname: String,
-    pub nom_commune: String,
-    pub code_insee: String,
+    pub municipality_name: String,
+    pub insee_code: String,
     pub mode: String,
 }
 
@@ -36,8 +36,8 @@ pub struct NewTransitStop {
     pub stop_lon: f32,
     pub stop_lat: f32,
     pub shortname: String,
-    pub nom_commune: String,
-    pub code_insee: String,
+    pub municipality_name: String,
+    pub insee_code: String,
     pub mode: String,
     // created_at and updated_at will be set by PostgreSQL defaults
 }
@@ -143,8 +143,8 @@ mod tests {
             stop_lon: 2.347_3,
             stop_lat: 48.8566,
             shortname: "CH".to_string(),
-            nom_commune: "Paris".to_string(),
-            code_insee: "75101".to_string(),
+            municipality_name: "Paris".to_string(),
+            insee_code: "75101".to_string(),
             mode: "metro".to_string(),
         }
     }
@@ -179,8 +179,8 @@ mod tests {
             "stop_lon": 2.3730,
             "stop_lat": 48.8447,
             "shortname": "GL",
-            "nom_commune": "Paris",
-            "code_insee": "75112",
+            "municipality_name": "Paris",
+            "insee_code": "75112",
             "mode": "rer"
         }"#;
 
