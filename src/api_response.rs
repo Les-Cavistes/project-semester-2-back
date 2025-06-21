@@ -9,14 +9,13 @@ pub type ApiResult = (StatusCode, Json<Value>);
 pub struct ApiResponse;
 
 impl ApiResponse {
-    /// # `base`
-    /// Creates a new `ApiResponse` with the given status and JSON value
+    /// Creates a new `ApiResponse` with the given status and JSON value.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `status` - The status code of the response
     /// * `json` - The JSON value to include in the response
     ///
-    /// ## Returns
+    /// # Returns
     /// * `ApiResult` containing the response data
     pub fn base(status: StatusCode, json: &Value) -> ApiResult {
         (
@@ -27,38 +26,35 @@ impl ApiResponse {
         )
     }
 
-    /// # `success`
-    /// Creates a success response with optional data
+    /// Creates a success response with optional data.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `data` - The data to include in the response
     ///
-    /// ## Returns
+    /// # Returns
     /// * `ApiResult` containing the response data
     pub fn success(data: impl Into<Value>) -> ApiResult {
         Self::base(StatusCode::OK, &data.into())
     }
 
-    /// # `created`
-    /// Creates a created response with optional data
+    /// Creates a created response with optional data.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `data` - The data to include in the response
     ///
-    /// ## Returns
+    /// # Returns
     /// * `ApiResult` containing the response data
     pub fn created(data: impl Into<Value>) -> ApiResult {
         Self::base(StatusCode::CREATED, &data.into())
     }
 
-    /// # `error`
-    /// Creates an error response with a message
+    /// Creates an error response with a message.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `status` - The status code of the error
     /// * `message` - The error message
     ///
-    /// ## Returns
+    /// # Returns
     /// * `ApiResult` containing the error response data
     pub fn error(status: StatusCode, message: &str) -> ApiResult {
         (
@@ -71,37 +67,34 @@ impl ApiResponse {
         )
     }
 
-    /// # `bad_request`
-    /// Creates a bad request error response
+    /// Creates a bad request error response.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `message` - The error message
     ///
-    /// ## Returns
+    /// # Returns
     /// * `ApiResult` containing the error response data
     pub fn bad_request(message: &str) -> ApiResult {
         Self::error(StatusCode::BAD_REQUEST, message)
     }
 
-    /// # `not_found`
-    /// Creates a not found error response
+    /// Creates a not found error response.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `message` - The error message
     ///
-    /// ## Returns
+    /// # Returns
     /// * `ApiResult` containing the error response data
     pub fn not_found(message: &str) -> ApiResult {
         Self::error(StatusCode::NOT_FOUND, message)
     }
 
-    /// # `internal_error`
-    /// Creates an internal server error response
+    /// Creates an internal server error response.
     ///
-    /// ## Arguments
+    /// # Arguments
     /// * `message` - The error message
     ///
-    /// ## Returns
+    /// # Returns
     /// * `ApiResult` containing the error response data
     pub fn internal_error(message: &str) -> ApiResult {
         Self::error(StatusCode::INTERNAL_SERVER_ERROR, message)
