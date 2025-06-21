@@ -120,7 +120,142 @@ where
 #[must_use]
 pub fn set_pagination_defaults(page: Option<i64>, per_page: Option<i64>) -> (i64, i64) {
     let page = page.map_or(DEFAULT_PAGE, |p| p.max(1));
-    let per_page = per_page.map_or(MAX_PER_PAGE, |p| p.clamp(1, MAX_PER_PAGE));
+    let per_page = per_page.map_or(DEFAULT_PER_PAGE, |p| p.clamp(1, MAX_PER_PAGE));
 
     (page, per_page)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn test_set_pagination_defaults_with_none_values() {
+        let (page, per_page) = set_pagination_defaults(None, None);
+
+        assert_eq!(page, DEFAULT_PAGE);
+        assert_eq!(per_page, DEFAULT_PER_PAGE);
+    }
+
+    #[test]
+    fn test_set_pagination_defaults_with_valid_values() {
+        let (page, per_page) = set_pagination_defaults(Some(5), Some(25));
+        assert_eq!(page, 5);
+        assert_eq!(per_page, 25);
+    }
+
+    #[test]
+    fn test_set_pagination_defaults_page_clamping() {
+        // Test negative page number gets clamped to 1
+        let (page, _) = set_pagination_defaults(Some(-1), None);
+        assert_eq!(page, 1);
+
+        // Test zero page number gets clamped to 1
+        let (page, _) = set_pagination_defaults(Some(0), None);
+        assert_eq!(page, 1);
+    }
+
+    #[test]
+    fn test_set_pagination_defaults_per_page_clamping() {
+        // Test negative per_page gets clamped to 1
+        let (_, per_page) = set_pagination_defaults(None, Some(-5));
+        assert_eq!(per_page, 1);
+
+        // Test zero per_page gets clamped to 1
+        let (_, per_page) = set_pagination_defaults(None, Some(0));
+        assert_eq!(per_page, 1);
+
+        // Test excessive per_page gets clamped to MAX_PER_PAGE
+        let (_, per_page) = set_pagination_defaults(None, Some(MAX_PER_PAGE + 1));
+        assert_eq!(per_page, MAX_PER_PAGE);
+    }
+
+    #[test]
+    fn test_pagination_result_serialization() {
+        let result = PaginationResult {
+            items: vec!["item1".to_string(), "item2".to_string()],
+            total_items: 100,
+            total_pages: 10,
+            page: 1,
+            per_page: 10,
+        };
+
+        let serialized = serde_json::to_string(&result).expect("Failed to serialize");
+
+        assert!(serialized.contains("\"total_items\":100"));
+        assert!(serialized.contains("\"total_pages\":10"));
+        assert!(serialized.contains("\"page\":1"));
+        assert!(serialized.contains("\"per_page\":10"));
+    }
+
+    #[test]
+    fn test_pagination_result_deserialization() {
+        let json_data = r#"{
+            "items": ["item1", "item2"],
+            "total_items": 50,
+            "total_pages": 5,
+            "page": 2,
+            "per_page": 10
+        }"#;
+
+        let result: PaginationResult<String> =
+            serde_json::from_str(json_data).expect("Failed to deserialize");
+
+        assert_eq!(result.items.len(), 2);
+        assert_eq!(result.total_items, 50);
+        assert_eq!(result.total_pages, 5);
+        assert_eq!(result.page, 2);
+        assert_eq!(result.per_page, 10);
+    }
+
+    #[test]
+    fn test_paginate_trait_implementation() {
+        // Create a mock query (using a simple string as placeholder)
+        let query = "SELECT * FROM table";
+        let paginated = query.paginate(3);
+
+        assert_eq!(paginated.page, 3);
+        assert_eq!(paginated.per_page, DEFAULT_PER_PAGE);
+        assert_eq!(paginated.offset, (3 - 1) * DEFAULT_PER_PAGE);
+    }
+
+    #[test]
+    fn test_paginated_per_page_method() {
+        let query = "SELECT * FROM table";
+        let paginated = query.paginate(2).per_page(20);
+
+        assert_eq!(paginated.page, 2);
+        assert_eq!(paginated.per_page, 20);
+        assert_eq!(paginated.offset, 20);
+    }
+
+    #[test]
+    fn test_paginated_offset_calculation() {
+        let query = "SELECT * FROM table";
+
+        // Test page 1
+        let paginated = query.paginate(1).per_page(10);
+        assert_eq!(paginated.offset, 0);
+
+        // Test page 3
+        let paginated = query.paginate(3).per_page(15);
+        assert_eq!(paginated.offset, 30);
+
+        // Test page 5
+        let paginated = query.paginate(5).per_page(7);
+        assert_eq!(paginated.offset, 28);
+    }
+
+    #[test]
+    fn test_edge_case_calculations() {
+        // Test with boundary values from constants
+        let (page, per_page) = set_pagination_defaults(Some(1), Some(MAX_PER_PAGE));
+        assert_eq!(page, 1);
+        assert_eq!(per_page, MAX_PER_PAGE);
+
+        // Test with exactly MAX_PER_PAGE
+        let (_, per_page) = set_pagination_defaults(None, Some(MAX_PER_PAGE));
+        assert_eq!(per_page, MAX_PER_PAGE);
+    }
 }

@@ -30,13 +30,6 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 /// * Failed to get a connection from the pool
 /// * The provided operation returns an error
 /// * The blocking task fails to complete (mapped from `JoinError`)
-///
-/// # Example
-/// ```no-run
-/// let result = execute_blocking_db_operation(pool, |conn| {
-///     YourModel::your_operation(conn)
-/// }).await;
-/// ```
 pub async fn execute_blocking_db_operation<F, T>(
     pool: DbPool,
     operation: F,
