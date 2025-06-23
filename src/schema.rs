@@ -15,9 +15,9 @@ diesel::table! {
         #[max_length = 20]
         shortname -> Varchar,
         #[max_length = 100]
-        nom_commune -> Varchar,
+        municipality_name -> Varchar,
         #[max_length = 10]
-        code_insee -> Varchar,
+        insee_code -> Varchar,
         #[max_length = 50]
         mode -> Varchar,
     }
