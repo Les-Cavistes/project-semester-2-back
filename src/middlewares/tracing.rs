@@ -21,7 +21,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust,no_run,norun
+//! ```norun
 //! use axum::Router;
 //! use your_crate::middlewares::tracing::create_tracing_layer;
 //!
@@ -62,7 +62,7 @@ use tracing::Level;
 ///
 /// # Examples
 ///
-/// ```rust,no_run,norun
+/// ```norun
 /// use axum::Router;
 /// use your_crate::middlewares::tracing::create_tracing_layer;
 ///
