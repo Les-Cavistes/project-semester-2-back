@@ -6,11 +6,11 @@
 //! ## Overview
 //!
 //! The authentication system uses a simple API key mechanism where clients must provide
-//! a valid `CAVISTS_API_KEY` header in their requests to access protected endpoints.
+//! a valid `CAVISTES_API_KEY` header in their requests to access protected endpoints.
 //!
 //! ## Security
 //!
-//! - API key is validated against the `CAVISTS_API_KEY` environment variable
+//! - API key is validated against the `CAVISTES_API_KEY` environment variable
 //! - Invalid or missing API keys result in 401 Unauthorized responses
 //! - Server configuration errors (missing env var) result in 500 Internal Server Error
 //!
@@ -37,10 +37,10 @@ use std::env;
 
 use crate::api_response::ApiResponse;
 
-/// Authentication middleware that validates the `CAVISTS_API_KEY` header.
+/// Authentication middleware that validates the `CAVISTES_API_KEY` header.
 ///
 /// This middleware extracts the API key from the request headers and validates it
-/// against the environment variable `CAVISTS_API_KEY`. If the key is valid, the
+/// against the environment variable `CAVISTES_API_KEY`. If the key is valid, the
 /// request proceeds to the next middleware/handler. Otherwise, an appropriate
 /// error response is returned.
 ///
@@ -57,11 +57,11 @@ use crate::api_response::ApiResponse;
 ///
 /// # Authentication Flow
 ///
-/// 1. **Environment Variable Check**: Validates that `CAVISTS_API_KEY` is set
+/// 1. **Environment Variable Check**: Validates that `CAVISTES_API_KEY` is set
 ///    - If missing: Returns 500 Internal Server Error
 ///
-/// 2. **Header Extraction**: Extracts `CAVISTS_API_KEY` from request headers
-///    - If missing: Returns 401 Unauthorized with "Missing `CAVISTS_API_KEY` header"
+/// 2. **Header Extraction**: Extracts `CAVISTES_API_KEY` from request headers
+///    - If missing: Returns 401 Unauthorized with "Missing `CAVISTES_API_KEY` header"
 ///
 /// 3. **Key Validation**: Compares provided key with expected key
 ///    - If invalid: Returns 401 Unauthorized with "Invalid API key"
@@ -73,7 +73,7 @@ use crate::api_response::ApiResponse;
 /// ```http
 /// GET /api/transit_stop HTTP/1.1
 /// Host: localhost:3000
-/// CAVISTS_API_KEY: your_secret_api_key_here
+/// CAVISTES_API_KEY: your_secret_api_key_here
 /// ```
 ///
 /// ## Invalid Request (Missing Header)
@@ -87,7 +87,7 @@ use crate::api_response::ApiResponse;
 /// ```http
 /// GET /api/transit_stop HTTP/1.1
 /// Host: localhost:3000
-/// CAVISTS_API_KEY: wrong_key
+/// CAVISTES_API_KEY: wrong_key
 /// ```
 /// Response: 401 Unauthorized with error message
 ///
@@ -105,11 +105,11 @@ use crate::api_response::ApiResponse;
 ///
 /// # Environment Variables
 ///
-/// * `CAVISTS_API_KEY` - The expected API key for authentication (required)
+/// * `CAVISTES_API_KEY` - The expected API key for authentication (required)
 ///
 /// # Security Considerations
 ///
-/// - Ensure `CAVISTS_API_KEY` is a strong, randomly generated key
+/// - Ensure `CAVISTES_API_KEY` is a strong, randomly generated key
 /// - Use HTTPS in production to protect the API key in transit
 /// - Regularly rotate the API key
 /// - Consider implementing rate limiting for additional security
@@ -117,8 +117,8 @@ pub async fn auth_middleware(headers: HeaderMap, request: Request, next: Next) -
     dotenvy::dotenv().ok();
 
     // Get the expected API key from environment variables
-    let Ok(expected_api_key) = env::var("CAVISTS_API_KEY") else {
-        eprintln!("CAVISTS_API_KEY environment variable not found");
+    let Ok(expected_api_key) = env::var("CAVISTES_API_KEY") else {
+        eprintln!("CAVISTES_API_KEY environment variable not found");
 
         let response = ApiResponse::error(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -130,7 +130,7 @@ pub async fn auth_middleware(headers: HeaderMap, request: Request, next: Next) -
 
     // Extract the API key from the request headers
     let provided_api_key = headers
-        .get("CAVISTS_API_KEY")
+        .get("CAVISTES_API_KEY")
         .and_then(|header_value| header_value.to_str().ok());
 
     match provided_api_key {
@@ -147,7 +147,7 @@ pub async fn auth_middleware(headers: HeaderMap, request: Request, next: Next) -
         None => {
             // No API key provided
             let response =
-                ApiResponse::error(StatusCode::UNAUTHORIZED, "Missing CAVISTS_API_KEY header");
+                ApiResponse::error(StatusCode::UNAUTHORIZED, "Missing CAVISTES_API_KEY header");
 
             response.into_response()
         }

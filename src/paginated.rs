@@ -96,12 +96,43 @@ impl<T> QueryFragment<Pg> for Paginated<T>
 where
     T: QueryFragment<Pg>,
 {
+    /// Builds the SQL AST for a paginated query with total count.
+    ///
+    /// This function implements the `QueryFragment` trait for `Paginated<T>`, which is used by
+    /// Diesel ORM to generate SQL queries. It wraps the original query with pagination logic
+    /// that includes both LIMIT/OFFSET for pagination and COUNT(*) OVER () for getting the
+    /// total number of records without requiring a separate query.
+    ///
+    /// The generated SQL structure is:
+    /// ```sql
+    /// SELECT *, COUNT(*) OVER () FROM (
+    ///   -- Original query goes here
+    /// ) AS subquery
+    /// LIMIT ? OFFSET ?
+    /// ```
+    ///
+    /// # Arguments
+    /// * `out` - The AST pass object used to build the SQL query incrementally
+    ///
+    /// # Returns
+    /// * `QueryResult<()>` - Success if the query was built successfully, error otherwise
+    ///
+    /// # Errors
+    /// * Returns a `QueryResult` error if the inner query's `walk_ast` fails
+    /// * Returns a `QueryResult` error if parameter binding fails
+    ///
+    /// # Example Generated SQL
+    /// For a query like `SELECT * FROM users WHERE active = true` with page 2, `per_page` 10:
+    /// ```sql
+    /// SELECT *, COUNT(*) OVER () FROM (
+    ///   SELECT * FROM users WHERE active = true
+    /// ) AS subquery
+    /// LIMIT 10 OFFSET 10
+    /// ```
     fn walk_ast<'b>(&'b self, mut out: AstPass<'_, 'b, Pg>) -> QueryResult<()> {
         out.push_sql("SELECT *, COUNT(*) OVER () FROM (");
-        self.query.walk_ast(out.reborrow())?; //
-        out.push_sql(
-            ") SELECT *, (SELECT COUNT(*) FROM counted_query) AS total FROM counted_query LIMIT ",
-        );
+        self.query.walk_ast(out.reborrow())?;
+        out.push_sql(") AS subquery LIMIT ");
         out.push_bind_param::<BigInt, _>(&self.per_page)?;
         out.push_sql(" OFFSET ");
         out.push_bind_param::<BigInt, _>(&self.offset)?;

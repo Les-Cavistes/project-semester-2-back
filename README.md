@@ -67,10 +67,10 @@ The application uses a layered middleware approach:
 - CORS support for local development
 
 #### Authentication
-All API endpoints require authentication via the `CAVISTS_API_KEY` header, except for the root health check endpoint (`/`). Include this header in your requests:
+All API endpoints require authentication via the `CAVISTES_API_KEY` header, except for the root health check endpoint (`/`). Include this header in your requests:
 
 ```
-CAVISTS_API_KEY: your_api_key_here
+CAVISTES_API_KEY: your_api_key_here
 ```
 
 Authentication failures return:
@@ -144,7 +144,7 @@ Environment variables:
 - `SERVER_PORT`: Server port number
 - `CORS_ALLOWED_ORIGIN`: Comma-separated list of allowed origins
 - `RATP_API_KEY`: API key for RATP services
-- `CAVISTS_API_KEY`: API key for authenticating requests to protected endpoints
+- `CAVISTES_API_KEY`: API key for authenticating requests to protected endpoints
 - `RUST_LOG`: Logging level configuration
 
 Copy `env.example` to `.env` and update the values as needed for your environment.
