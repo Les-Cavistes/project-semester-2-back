@@ -2,7 +2,7 @@ use crate::models::JourneyResponse;
 use crate::{
     api_response::{ApiResponse, ApiResult},
     models::Place,
-    ratp::RatpClient,
+    services::ratp::RatpClient,
 };
 use axum::extract::Query;
 use geoconvert::LatLon;

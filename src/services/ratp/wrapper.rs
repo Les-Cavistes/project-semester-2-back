@@ -19,7 +19,7 @@
 //! # Examples
 //!
 //! ```no_run
-//! use back::ratp::RatpClient;
+//! use back::services::ratp::RatpClient;
 //!
 //! // Initialize the client
 //! let client = RatpClient::new();
@@ -76,7 +76,7 @@ impl RatpClient {
     /// # Examples
     ///
     /// ```no_run
-    /// use back::ratp::RatpClient;
+    /// use back::services::ratp::RatpClient;
     ///
     /// // Make sure RATP_API_KEY is set in your environment
     /// let client = RatpClient::new();
@@ -132,7 +132,7 @@ impl RatpClient {
     /// # Examples
     ///
     /// ```no_run
-    /// use back::ratp::RatpClient;
+    /// use back::services::ratp::RatpClient;
     ///
     /// # async fn example() -> Result<(), reqwest::Error> {
     /// let client = RatpClient::new();
