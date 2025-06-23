@@ -22,7 +22,7 @@
 //!
 //! For any paginated query, the system generates SQL in this pattern:
 //! ```sql
-//! SELECT * , COUNT(*) OVER () FROM (
+//! SELECT *, COUNT(*) OVER () FROM (
 //!   -- Your original query here
 //!   SELECT * FROM table WHERE conditions
 //! ) AS subquery
@@ -45,7 +45,7 @@
 //! ### Basic Pagination
 //!
 //! ```norun
-//! use crat::paginated::{Paginate, set_pagination_defaults};
+//! use crate::paginated::{Paginate, set_pagination_defaults};
 //! use diesel::prelude::*;
 //!
 //! // Paginate a query
@@ -72,7 +72,7 @@
 //!     transit_stop::table.into_boxed()
 //! } else {
 //!     transit_stop::table
-//!         .filter(transit_stop::stpp_name.ilike(format!("%{query}%")))
+//!         .filter(transit_stop::stop_name.ilike(format!("%{query}%")))
 //!         .or_filter(transit_stop::route_long_name.ilike(format!("%{query}%")))
 //!         .or_filter(transit_stop::shortname.ilike(format!("%{query}%")))
 //!         .into_boxed()
@@ -115,7 +115,7 @@
 //!
 //! ## Error Handling
 //!
-//! The module propagates Siesel's `QueryResult` errors, which include:
+//! The module propagates Diesel's `QueryResult` errors, which include:
 //! - Database connection errors
 //! - SQL syntax errors (should be rare due to compile-time generation)
 //! - Data type conversion errors
@@ -140,7 +140,7 @@
 //!
 //! - **PostgreSQL specific**: Uses PostgreSQL window functions (could be adapted for other DBs)
 //! - **Memory usage**: Large page sizes can consume significant memory
-//! - **Deep pagination performance**: Very high page numbers pay have performance implications
+//! - **Deep pagination performance**: Very high page numbers may have performance implications
 //! - **Complex queries**: Some very complex queries might not work with the subquery approach
 
 use diesel::pg::Pg;
@@ -277,7 +277,7 @@ impl<T> RunQueryDsl<PgConnection> for Paginated<T> {}
 /// ```sql
 /// SELECT *, COUNT(*) OVER () FROM (
 ///   [ORIGINAL_QUERY]
-/// ) AS subquery LIMIT ? OFFSET
+/// ) AS subquery LIMIT ? OFFSET ?
 /// ```
 ///
 /// This approach:
@@ -300,7 +300,7 @@ where
     /// ```sql
     /// SELECT *, COUNT(*) OVER () FROM (
     ///   -- Original query goes here
-    /// ) AS subque
+    /// ) AS subquery
     /// LIMIT ? OFFSET ?
     /// ```
     ///
@@ -320,7 +320,7 @@ where
     /// SELECT *, COUNT(*) OVER () FROM (
     ///   SELECT * FROM users WHERE active = true
     /// ) AS subquery
-    /// LIMIT 10 OFFET 10
+    /// LIMIT 10 OFFSET 10
     /// ```
     fn walk_ast<'b>(&'b self, mut out: AstPass<'_, 'b, Pg>) -> QueryResult<()> {
         out.push_sql("SELECT *, COUNT(*) OVER () FROM (");
