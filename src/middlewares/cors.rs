@@ -17,7 +17,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust,no_run,norun
+//! ```norun
 //! use axum::Router;
 //! use tower::ServiceBuilder;
 //! use your_crate::middlewares::cors::create_cors_layer;
