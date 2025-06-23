@@ -22,19 +22,25 @@ back/src/
 ├── api_response.rs  # Standardized API response handling
 ├── lib.rs          # Core database configuration and constants
 ├── main.rs         # Application entry point and server configuration
+├── middlewares/    # HTTP middleware components
+│   ├── auth.rs     # API key authentication middleware
+│   ├── cors.rs     # Cross-Origin Resource Sharing configuration
+│   ├── tracing.rs  # HTTP request/response logging
+│   └── mod.rs
 ├── models/         # Data models and database operations
 │   ├── journey.rs  # Journey-related models
 │   ├── mod.rs
 │   └── transit_stop.rs
 ├── paginated.rs    # Custom pagination implementation
-├── ratp/          # RATP API client wrapper
-│   ├── mod.rs
-│   └── wrapper.rs
 ├── routes/         # API endpoints
 │   ├── journey.rs
 │   ├── mod.rs
 │   └── transit_stop.rs
 ├── schema.rs       # Database schema definitions
+├── services/       # External service integrations
+│   └── ratp/      # RATP API client wrapper
+│       ├── mod.rs
+│       └── wrapper.rs
 └── url.rs         # URL builder for API requests
 ```
 
@@ -46,13 +52,30 @@ back/src/
 - Includes automated migration support
 - Schema defined for transit stops with comprehensive fields
 
+### Middleware Architecture
+The application uses a layered middleware approach:
+- **Tracing Middleware**: HTTP request/response logging for observability
+- **CORS Middleware**: Cross-origin resource sharing configuration
+- **Authentication Middleware**: API key validation (applied selectively)
+
 ### API Endpoints
-- `POST /transit_stop` - Create new transit stop
-- `GET /transit_stop` - Get all transit stops with pagination
-- `GET /transit_stop/search` - Search transit stops with pagination
-- `GET /journey` - Get journey information between two points
-- Root endpoint for health checks
+- `POST /transit_stop` - Create new transit stop (requires authentication)
+- `GET /transit_stop` - Get all transit stops with pagination (requires authentication)
+- `GET /transit_stop/search` - Search transit stops with pagination (requires authentication)
+- `GET /journey` - Get journey information between two points (requires authentication)
+- `GET /` - Root endpoint for health checks (public, no authentication required)
 - CORS support for local development
+
+#### Authentication
+All API endpoints require authentication via the `CAVISTS_API_KEY` header, except for the root health check endpoint (`/`). Include this header in your requests:
+
+```
+CAVISTS_API_KEY: your_api_key_here
+```
+
+Authentication failures return:
+- `401 Unauthorized` - Missing or invalid API key
+- `500 Internal Server Error` - Server configuration error
 
 ### Response Format
 
@@ -121,7 +144,10 @@ Environment variables:
 - `SERVER_PORT`: Server port number
 - `CORS_ALLOWED_ORIGIN`: Comma-separated list of allowed origins
 - `RATP_API_KEY`: API key for RATP services
+- `CAVISTS_API_KEY`: API key for authenticating requests to protected endpoints
 - `RUST_LOG`: Logging level configuration
+
+Copy `env.example` to `.env` and update the values as needed for your environment.
 
 ## Dependencies
 

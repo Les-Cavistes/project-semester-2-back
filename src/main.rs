@@ -1,6 +1,7 @@
-use axum::{routing::get, Router};
+use axum::{middleware, routing::get, Router};
 use back::{
     api_response::{ApiResponse, ApiResult},
+    middlewares::{auth_middleware, create_cors_layer, create_tracing_layer},
     routes::{journey_get, transit_stop_get, transit_stop_search},
     DbPool,
 };
@@ -10,10 +11,6 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use serde_json::json;
 use std::env;
 use tower::ServiceBuilder;
-use tower_http::cors::CorsLayer;
-use tower_http::trace;
-use tower_http::trace::TraceLayer;
-use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 /// Runs database migrations on application startup.
@@ -67,14 +64,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         env::var("SERVER_PORT").expect("SERVER_PORT environment variable is missing or invalid");
     let server_addr = format!("{server_host}:{server_port}");
 
-    // Get CORS configuration from environment or use default
-    let allowed_origins = env::var("CORS_ALLOWED_ORIGIN")
-        .expect("CORS_ALLOWED_ORIGIN environment variable is missing or invalid")
-        .split(',')
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .filter_map(|origin| origin.parse::<axum::http::HeaderValue>().ok())
-        .collect::<Vec<_>>();
+    // Create middleware layers
+    let cors_layer = create_cors_layer().expect("Failed to create CORS layer");
+    let tracing_layer = create_tracing_layer();
 
     // Create database connection pool
     let manager = ConnectionManager::<PgConnection>::new(database_url);
@@ -83,39 +75,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run migrations
     run_migrations(&pool).await?;
 
-    // Configure CORS with multiple allowed origins
-    let mut cors = CorsLayer::new();
-    for origin in allowed_origins {
-        cors = cors.allow_origin(origin);
-    }
+    // Create router for public routes (no authentication required)
+    let public_routes = Router::new().route("/", get(root));
 
-    // Build our application with routes
-    let app = Router::new()
-        .route("/", get(root))
+    // Create router for protected routes (authentication required)
+    let protected_routes = Router::new()
         .route("/transit_stop", get(transit_stop_get))
         .route("/transit_stop/search", get(transit_stop_search))
         .route("/journey", get(journey_get))
-        .layer(ServiceBuilder::new().layer(cors))
-        .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(
-                    trace::DefaultMakeSpan::new()
-                        .level(Level::INFO)
-                        .include_headers(false),
-                )
-                .on_response(
-                    trace::DefaultOnResponse::new()
-                        .level(Level::INFO)
-                        .include_headers(false),
-                )
-                .on_request(trace::DefaultOnRequest::new().level(Level::INFO))
-                .on_failure(trace::DefaultOnFailure::new().level(Level::ERROR)),
-        )
+        .layer(middleware::from_fn(auth_middleware));
+
+    // Build our application with routes
+    let app = Router::new()
+        .merge(public_routes)
+        .merge(protected_routes)
+        .layer(ServiceBuilder::new().layer(cors_layer))
+        .layer(tracing_layer)
         .with_state(pool);
 
     // Run the server
     println!("Server running on {server_addr}");
+
     let listener = tokio::net::TcpListener::bind(&server_addr).await?;
+
     axum::serve(listener, app).await?;
 
     Ok(())
