@@ -6,7 +6,7 @@ use crate::{
 use crate::schema::transit_stop;
 use diesel::{
     prelude::{Insertable, Queryable},
-    QueryDsl, QueryResult, TextExpressionMethods,
+    PgTextExpressionMethods, QueryDsl, QueryResult,
 };
 use serde::{Deserialize, Serialize};
 
@@ -75,9 +75,10 @@ impl TransitStop {
             transit_stop::table.into_boxed()
         } else {
             transit_stop::table
-                .filter(transit_stop::stop_name.like(format!("%{query}%")))
-                .or_filter(transit_stop::route_long_name.like(format!("%{query}%")))
-                .or_filter(transit_stop::shortname.like(format!("%{query}%")))
+                // using ilike for case-insensitive search
+                .filter(transit_stop::stop_name.ilike(format!("%{query}%")))
+                .or_filter(transit_stop::route_long_name.ilike(format!("%{query}%")))
+                .or_filter(transit_stop::shortname.ilike(format!("%{query}%")))
                 .into_boxed()
         };
 
