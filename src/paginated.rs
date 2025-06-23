@@ -1,3 +1,148 @@
+//! # Pagination Module for Diesel ORM
+//!
+//! This module provides a comprehensive pagination system for database queries using Diesel ORM
+//! with PostgreSQL. It implements efficient pagination through SQL-level LIMIT/OFFSET clauses
+//! combined with window functions to get total counts without requiring separate queries.
+//!
+//! ## Overview
+//!
+//! The pagination system is built around several key components:
+//! - **`Paginate` trait**: Extends any query type with pagination capabilities
+//! - **`Paginated<T>` struct**: Wraps queries with pagination parameters
+//! - **`PaginationResult<T>` struct**: Contains paginated data and metadata
+//! - **SQL generation**: Uses PostgreSQL window functions for efficient counting
+//!
+//! ## Architecture
+//!
+//! The module uses Diesel's query builder system to generate optimized SQL queries that include
+//! both pagination (LIMIT/OFFSET) and total counting (COUNT(*) OVER()) in a single database round-trip.
+//! This approach is significantly more efficient than executing separate queries for data and counts.
+//!
+//! ### Generated SQL Pattern
+//!
+//! For any paginated query, the system generates SQL in this pattern:
+//! ```sql
+//! SELECT * , COUNT(*) OVER () FROM (
+//!   -- Your original query here
+//!   SELECT * FROM table WHERE conditions
+//! ) AS subquery
+//! LIMIT ? OFFSET ?
+//! ```
+//!
+//! This allows retrieving both the paginated results and the total count efficiently.
+//!
+//! ## Key Features
+//!
+//! - **Zero-copy pagination**: Pagination parameters are computed at compile time where possible
+//! - **SQL-level optimization**: Uses PostgreSQL window functions for efficient counting
+//! - **Flexible configuration**: Supports custom page sizes with automatic bounds checking
+//! - **Type safety**: Leverages Rust's type system to prevent common pagination errors
+//! - **Serde integration**: Full serialization/deserialization support for API responses
+//! - **Comprehensive testing**: Extensive test coverage for edge cases and boundary conditions
+//!
+//! ## Usage Examples
+//!
+//! ### Basic Pagination
+//!
+//! ```norun
+//! use crat::paginated::{Paginate, set_pagination_defaults};
+//! use diesel::prelude::*;
+//!
+//! // Paginate a query
+//! let paginated_query = users::table
+//!     .filter(users::active.eq(true))
+//!     .paginate(1);  // Page 1
+//!
+//! // Execute with custom page size
+//! let results = paginated_query
+//!     .per_page(20)
+//!     .load_and_count_pages(&mut conn)?;
+//!
+//! println!("Page {} of {}", results.page, results.total_pages);
+//! println!("Found {} total users", results.total_items);
+//! ```
+//!
+//! ### Complex Queries with Dynamic Filtering
+//!
+//! The pagination system works seamlessly with complex, dynamically built queries:
+//!
+//! ```norun
+//! // Example: Conditional search with multiple filters
+//! let base_query = if query.is_empty() {
+//!     transit_stop::table.into_boxed()
+//! } else {
+//!     transit_stop::table
+//!         .filter(transit_stop::stpp_name.ilike(format!("%{query}%")))
+//!         .or_filter(transit_stop::route_long_name.ilike(format!("%{query}%")))
+//!         .or_filter(transit_stop::shortname.ilike(format!("%{query}%")))
+//!         .into_boxed()
+//! };
+//!
+//! // Pagination works with any boxed query
+//! let results = base_query
+//!     .order(transit_stop::id)
+//!     .paginate(page)
+//!     .per_page(per_page)
+//!     .load_and_count_pages(conn)?;
+//! ```
+//!
+//! This approach is particularly useful for:
+//! - **Search functionality**: Dynamic WHERE clauses based on user input
+//! - **Conditional filtering**: Different query logic based on parameters
+//! - **Complex joins**: Multi-table queries with optional conditions
+//! - **Dynamic sorting**: Different ORDER BY clauses based on user preferences
+//!
+//! ## Configuration
+//!
+//! The module relies on several constants that should be defined in your main application:
+//! - `DEFAULT_PAGE`: Default page number (typically 1)
+//! - `DEFAULT_PER_PAGE`: Default items per page (e.g., 10, 20, 50)
+//! - `MAX_PER_PAGE`: Maximum allowed items per page (prevents excessive memory usage)
+//!
+//! ## Performance Considerations
+//!
+//! ### Advantages
+//! - **Single query execution**: Eliminates the N+1 query problem for pagination metadata
+//! - **PostgreSQL optimization**: Leverages database-level window functions
+//! - **Memory efficient**: Processes results in a streaming fashion when possible
+//! - **Index friendly**: Works well with proper database indexing strategies
+//!
+//! ### Best Practices
+//! - Always add appropriate database indexes for your ORDER BY columns
+//! - Consider using cursor-based pagination for very large datasets
+//! - Set reasonable MAX_PER_PAGE limits to prevent memory exhaustion
+//! - Use prepared statements when possible (handled automatically by Diesel)
+//!
+//! ## Error Handling
+//!
+//! The module propagates Siesel's `QueryResult` errors, which include:
+//! - Database connection errors
+//! - SQL syntax errors (should be rare due to compile-time generation)
+//! - Data type conversion errors
+//! - Constraint violations
+//!
+//! ## Thread Safety
+//!
+//! All pagination structures are `Send + Sync` when the underlying query type is,
+//! making them safe to use across thread boundaries. The pagination logic itself
+//! is stateless and doesn't require any synchronization.
+//!
+//! ## Testing
+//!
+//! The module includes comprehensive tests covering:
+//! - Default value handling and edge cases
+//! - Boundary condition validation (negative pages, excessive page sizes)
+//! - Serialization/deserialization round-trips
+//! - Offset calculation accuracy
+//! - Integration with Diesel's query system
+//!
+//! ## Limitations
+//!
+//! - **PostgreSQL specific**: Uses PostgreSQL window functions (could be adapted for other DBs)
+//! - **Memory usage**: Large page sizes can consume significant memory
+//! - **Deep pagination performance**: Very high page numbers pay have performance implications
+//! - **Complex queries**: Some very complex queries might not work with the subquery approach
+
 use diesel::pg::Pg;
 use diesel::query_builder::{AstPass, Query, QueryFragment, QueryId};
 use diesel::query_dsl::methods::LoadQuery;
@@ -86,12 +231,60 @@ impl<T> Paginated<T> {
     }
 }
 
+/// Implementation of Diesel's `Query` trait for `Paginated<T>`.
+///
+/// This trait implementation is crucial for making `Paginated<T>` compatible with Diesel's
+/// query system. It defines the SQL return type for paginated queries, which is a tuple
+/// containing both the original query results and the total count.
+///
+/// The `SqlType` is defined as `(T::SqlType, BigInt)` because our generated SQL returns:
+/// - `T::SqlType`: The original query's result type
+/// - `BigInt`: The total count from `COUNT(*) OVER ()`
+///
+/// This type signature ensures compile-time type safety and allows Diesel to properly
+/// deserialize the database results into the expected Rust types.
 impl<T: Query> Query for Paginated<T> {
     type SqlType = (T::SqlType, BigInt);
 }
 
+/// Implementation of Diesel's `RunQueryDsl` trait for `Paginated<T>`.
+///
+/// This is a marker trait implementation that enables `Paginated<T>` to be executed
+/// against a PostgreSQL database connection. The empty implementation (`{}`) is sufficient
+/// because all the actual query execution logic is provided by Diesel's default implementations
+/// in the `RunQueryDsl` trait.
+///
+/// This trait provides methods like:
+/// - `.load()` - Execute query and return all results
+/// - `.first()` - Execute query and return first result
+/// - `.get_result()` - Execute query expecting exactly one result
+///
+/// Without this implementation, you wouldn't be able to call `.load_and_count_pages()` or
+/// any other execution methods on `Paginated<T>`.
 impl<T> RunQueryDsl<PgConnection> for Paginated<T> {}
 
+/// Implementation of Diesel's `QueryFragment` trait for `Paginated<T>`.
+///
+/// This is the most complex and critical trait implementation. It defines how `Paginated<T>`
+/// gets translated into actual SQL. The `QueryFragment` trait is Diesel's mechanism for
+/// building SQL Abstract Syntax Trees (AST) that can be compiled into executable SQL.
+///
+/// The `where T: QueryFragment<Pg>` bound ensures that the wrapped query type can also
+/// be converted to SQL for PostgreSQL, which is necessary since we need to embed the
+/// original query within our pagination wrapper.
+///
+/// The `walk_ast` method builds SQL in this specific pattern:
+/// ```sql
+/// SELECT *, COUNT(*) OVER () FROM (
+///   [ORIGINAL_QUERY]
+/// ) AS subquery LIMIT ? OFFSET
+/// ```
+///
+/// This approach:
+/// 1. Wraps the original query in a subquery to ensure proper isolation
+/// 2. Adds `COUNT(*) OVER ()` to get total count without a separate query
+/// 3. Applies `LIMIT` and `OFFSET` for pagination
+/// 4. Uses parameterized queries (?) for security and performance
 impl<T> QueryFragment<Pg> for Paginated<T>
 where
     T: QueryFragment<Pg>,
@@ -107,7 +300,7 @@ where
     /// ```sql
     /// SELECT *, COUNT(*) OVER () FROM (
     ///   -- Original query goes here
-    /// ) AS subquery
+    /// ) AS subque
     /// LIMIT ? OFFSET ?
     /// ```
     ///
@@ -127,7 +320,7 @@ where
     /// SELECT *, COUNT(*) OVER () FROM (
     ///   SELECT * FROM users WHERE active = true
     /// ) AS subquery
-    /// LIMIT 10 OFFSET 10
+    /// LIMIT 10 OFFET 10
     /// ```
     fn walk_ast<'b>(&'b self, mut out: AstPass<'_, 'b, Pg>) -> QueryResult<()> {
         out.push_sql("SELECT *, COUNT(*) OVER () FROM (");
