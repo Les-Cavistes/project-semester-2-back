@@ -71,8 +71,6 @@ use tower_http::cors::CorsLayer;
 /// - Avoid using wildcard (`*`) origins with credentials
 /// - Regularly review and update allowed origins list
 pub fn create_cors_layer() -> Result<CorsLayer, String> {
-    dotenvy::dotenv().ok();
-
     // Get CORS configuration from environment
     let cors_origins_str = env::var("CORS_ALLOWED_ORIGIN")
         .map_err(|_| "CORS_ALLOWED_ORIGIN environment variable is missing or invalid")?;

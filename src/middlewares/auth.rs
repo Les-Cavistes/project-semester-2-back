@@ -114,8 +114,6 @@ use crate::api_response::ApiResponse;
 /// - Regularly rotate the API key
 /// - Consider implementing rate limiting for additional security
 pub async fn auth_middleware(headers: HeaderMap, request: Request, next: Next) -> Response {
-    dotenvy::dotenv().ok();
-
     // Get the expected API key from environment variables
     let Ok(expected_api_key) = env::var("CAVISTES_API_KEY") else {
         eprintln!("CAVISTES_API_KEY environment variable not found");
