@@ -1,10 +1,7 @@
-use axum::{
-    routing::{get, post},
-    Router,
-};
+use axum::{routing::get, Router};
 use back::{
     api_response::{ApiResponse, ApiResult},
-    routes::{journey_get, transit_stop_create, transit_stop_get, transit_stop_search},
+    routes::{journey_get, transit_stop_get, transit_stop_search},
     DbPool,
 };
 use diesel::r2d2::{ConnectionManager, Pool};
@@ -96,7 +93,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/", get(root))
         .route("/transit_stop", get(transit_stop_get))
-        .route("/transit_stop", post(transit_stop_create))
         .route("/transit_stop/search", get(transit_stop_search))
         .route("/journey", get(journey_get))
         .layer(ServiceBuilder::new().layer(cors))

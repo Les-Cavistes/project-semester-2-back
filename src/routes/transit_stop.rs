@@ -1,41 +1,13 @@
 use crate::{
     api_response::{ApiResponse, ApiResult},
-    models::{NewTransitStop, TransitStop},
+    models::TransitStop,
     paginated::set_pagination_defaults,
     utils::execute_blocking_db_operation,
     DbPool,
 };
-use axum::{
-    extract::{Query, State},
-    response::Json,
-};
+use axum::extract::{Query, State};
 use serde::Deserialize;
 use serde_json::json;
-
-/// Handles POST requests to create a new `transit_stop`.
-///
-/// # Arguments
-/// * `State(pool)` - Database connection pool
-/// * `Json(transit_stop)` - The `transit_stop` to create
-///
-/// # Returns
-/// * `ApiResult` - The response containing the created `transit_stop` or an error message
-pub async fn transit_stop_create(
-    State(pool): State<DbPool>,
-    Json(transit_stop): Json<NewTransitStop>,
-) -> ApiResult {
-    let result =
-        execute_blocking_db_operation(pool, move |conn| TransitStop::insert(&transit_stop, conn))
-            .await;
-
-    match result {
-        Ok(transit_stop) => ApiResponse::created(json!({
-            "message": "Successfully created transit_stop",
-            "transit_stop": transit_stop
-        })),
-        Err(e) => ApiResponse::internal_error(&format!("Failed to create transit_stop: {e}")),
-    }
-}
 
 /// Query parameters for pagination
 #[derive(Deserialize)]
