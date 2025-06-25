@@ -1,10 +1,10 @@
 use axum::{middleware, routing::get, Router};
 use back::config::run_migrations;
-use back::routes::root;
+use back::routes::{root, transit_stop_routes};
 use back::{
     config::initialize_config,
     middlewares::{auth_middleware, create_cors_layer, create_tracing_layer},
-    routes::{journey_get, transit_stop_get, transit_stop_search},
+    routes::journey_get,
 };
 use tower::ServiceBuilder;
 
@@ -27,8 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create router for protected routes (authentication required)
     let protected_routes = Router::new()
-        .route("/transit_stop", get(transit_stop_get))
-        .route("/transit_stop/search", get(transit_stop_search))
+        .nest("/transit_stop", transit_stop_routes())
         .route("/journey", get(journey_get))
         .layer(middleware::from_fn(auth_middleware));
 
