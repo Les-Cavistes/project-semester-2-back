@@ -1,10 +1,10 @@
 use crate::models::JourneyResponse;
 use crate::{
     api_response::{ApiResponse, ApiResult},
+    config::AppState,
     models::Place,
-    services::ratp::RatpClient,
 };
-use axum::extract::Query;
+use axum::extract::{Query, State};
 use geoconvert::LatLon;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -160,11 +160,15 @@ pub struct JourneyQuery {
 /// Provides an endpoint to fetch journey information based on coordinates.
 ///
 /// # Arguments
+/// * `State(state)` - Application state containing shared resources
 /// * `Query(params)` - Query parameters containing 'from' and 'to' coordinates
 ///
 /// # Returns
 /// JSON response containing journey information or error message
-pub async fn journey_get(Query(params): Query<JourneyQuery>) -> ApiResult {
+pub async fn journey_get(
+    State(state): State<AppState>,
+    Query(params): Query<JourneyQuery>,
+) -> ApiResult {
     let from = params.from.unwrap_or_default();
     let to = params.to.unwrap_or_default();
 
@@ -182,9 +186,11 @@ pub async fn journey_get(Query(params): Query<JourneyQuery>) -> ApiResult {
         Err(e) => return e.into(),
     };
 
-    let client = RatpClient::new();
-
-    match client.fetch_journey(from_coords, to_coords).await {
+    match state
+        .ratp_client
+        .fetch_journey(from_coords, to_coords)
+        .await
+    {
         Ok(response) => ApiResponse::success(transform_journey_response(&response)),
         Err(e) => JourneyError::RatpError(e.to_string()).into(),
     }

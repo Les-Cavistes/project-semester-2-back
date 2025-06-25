@@ -8,6 +8,7 @@ pub type ProjectPooledConnection =
     diesel::r2d2::PooledConnection<ConnectionManager<diesel::PgConnection>>;
 
 pub mod api_response;
+pub mod config;
 pub mod middlewares;
 pub mod models;
 pub mod paginated;

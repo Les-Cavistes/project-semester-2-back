@@ -46,6 +46,12 @@ back/src/
 
 ## Key Components
 
+### Application State
+- Uses `AppState` struct to manage shared resources efficiently
+- Implements thread-safe sharing of database pool and RATP client
+- Optimizes resource utilization through smart pointer (`Arc`) implementation
+- Ensures efficient request handling without redundant client creation
+
 ### Database Layer
 - Uses Diesel ORM with PostgreSQL
 - Implements connection pooling via r2d2
@@ -53,17 +59,16 @@ back/src/
 - Schema defined for transit stops with comprehensive fields
 - Helper utilities for async database operations
 
+### Configuration Management
+- Configuration logic centralized in `config.rs`
+- Structured initialization process for database migrations and server setup
+- Clean separation of configuration concerns from application logic
+
 ### Middleware Architecture
 The application uses a layered middleware approach with Axum:
 - **Tracing Middleware**: HTTP request/response logging for observability
 - **CORS Middleware**: Cross-origin resource sharing configuration
 - **Authentication Middleware**: API key validation (applied selectively to protected routes)
-
-### Middleware Architecture
-The application uses a layered middleware approach:
-- **Tracing Middleware**: HTTP request/response logging for observability
-- **CORS Middleware**: Cross-origin resource sharing configuration
-- **Authentication Middleware**: API key validation (applied selectively)
 
 ### API Endpoints
 - `GET /` - Root endpoint for health checks (public, no authentication required)
