@@ -6,6 +6,8 @@ use crate::{
     utils::execute_blocking_db_operation,
 };
 use axum::extract::{Query, State};
+use axum::routing::get;
+use axum::Router;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -76,4 +78,14 @@ pub async fn transit_stop_search(
         })),
         Err(e) => ApiResponse::internal_error(&format!("Failed to retrieve transit_stops: {e}")),
     }
+}
+
+/// Returns a router with all transit stop routes.
+///
+/// # Returns
+/// * `Router` - Router containing all transit stop routes
+pub fn transit_stop_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(transit_stop_get))
+        .route("/search", get(transit_stop_search))
 }
