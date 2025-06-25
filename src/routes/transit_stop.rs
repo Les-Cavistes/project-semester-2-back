@@ -1,9 +1,9 @@
 use crate::{
     api_response::{ApiResponse, ApiResult},
+    config::AppState,
     models::TransitStop,
     paginated::set_pagination_defaults,
     utils::execute_blocking_db_operation,
-    DbPool,
 };
 use axum::extract::{Query, State};
 use serde::Deserialize;
@@ -19,19 +19,19 @@ pub struct PaginationQuery {
 /// Handles GET requests to retrieve all `transit_stops`.
 ///
 /// # Arguments
-/// * `State(pool)` - Database connection pool
+/// * `State(state)` - Application state containing shared resources
 /// * `Query(params)` - Query parameters for pagination
 ///
 /// # Returns
 /// * `ApiResult` - The response containing the retrieved `transit_stops` or an error message
 pub async fn transit_stop_get(
-    State(pool): State<DbPool>,
+    State(state): State<AppState>,
     Query(params): Query<PaginationQuery>,
 ) -> ApiResult {
     let (page, per_page) = set_pagination_defaults(params.page, params.per_page);
 
     let result =
-        execute_blocking_db_operation(pool, move |conn| TransitStop::all(page, per_page, conn))
+        execute_blocking_db_operation(state.db, move |conn| TransitStop::all(page, per_page, conn))
             .await;
 
     match result {
@@ -53,19 +53,19 @@ pub struct SearchQuery {
 /// Handles GET requests to search for `transit_stops`.
 ///
 /// # Arguments
-/// * `State(pool)` - Database connection pool
+/// * `State(state)` - Application state containing shared resources
 /// * `Query(params)` - Query parameters for search and pagination
 ///
 /// # Returns
 /// * `ApiResult` - The response containing the search results or an error message
 pub async fn transit_stop_search(
-    State(pool): State<DbPool>,
+    State(state): State<AppState>,
     Query(params): Query<SearchQuery>,
 ) -> ApiResult {
     let query = params.query.unwrap_or_default();
     let (page, per_page) = set_pagination_defaults(params.page, params.per_page);
 
-    let result = execute_blocking_db_operation(pool, move |conn| {
+    let result = execute_blocking_db_operation(state.db, move |conn| {
         TransitStop::search(&query, page, per_page, conn)
     })
     .await;

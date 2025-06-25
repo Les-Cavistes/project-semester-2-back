@@ -37,7 +37,7 @@
 use crate::{models::JourneyResponse, url::Url};
 
 use reqwest::{header, Client};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 /// A client wrapper for the RATP/Île-de-France Mobilités API.
 ///
@@ -46,11 +46,12 @@ use std::collections::HashMap;
 ///
 /// # Fields
 ///
-/// * `client` - The underlying HTTP client for making requests
+/// * `client` - The underlying HTTP client for making requests, wrapped in Arc for thread-safe sharing
 /// * `base_url` - The base URL for all API endpoints
+#[derive(Clone)]
 pub struct RatpClient {
-    /// HTTP client instance from reqwest
-    client: Client,
+    /// HTTP client instance from reqwest, wrapped in Arc for thread-safe sharing
+    client: Arc<Client>,
     /// Base URL for the API endpoints
     base_url: &'static str,
 }
@@ -71,7 +72,10 @@ impl RatpClient {
     ///
     /// # Panics
     ///
-    /// This method will panic if the `RATP_API_KEY` environment variable is not set.
+    /// This method will panic if:
+    /// * The `RATP_API_KEY` environment variable is not set
+    /// * The API key format is invalid
+    /// * Failed to build the HTTP client
     ///
     /// # Examples
     ///
@@ -98,7 +102,7 @@ impl RatpClient {
             .expect("Failed to build HTTP client");
 
         RatpClient {
-            client,
+            client: Arc::new(client),
             base_url: "https://prim.iledefrance-mobilites.fr/marketplace/v2",
         }
     }
