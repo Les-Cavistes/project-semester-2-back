@@ -95,7 +95,7 @@ use crate::api_response::ApiResponse;
 ///
 /// All error responses follow the standard API response format:
 ///
-/// ```json
+/// ```json5
 /// {
 ///   "error": {
 ///     "message": "Error description"

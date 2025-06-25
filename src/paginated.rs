@@ -1,7 +1,7 @@
 //! # Pagination Module for Diesel ORM
 //!
 //! This module provides a comprehensive pagination system for database queries using Diesel ORM
-//! with PostgreSQL. It implements efficient pagination through SQL-level LIMIT/OFFSET clauses
+//! with `PostgreSQL`. It implements efficient pagination through SQL-level LIMIT/OFFSET clauses
 //! combined with window functions to get total counts without requiring separate queries.
 //!
 //! ## Overview
@@ -10,12 +10,12 @@
 //! - **`Paginate` trait**: Extends any query type with pagination capabilities
 //! - **`Paginated<T>` struct**: Wraps queries with pagination parameters
 //! - **`PaginationResult<T>` struct**: Contains paginated data and metadata
-//! - **SQL generation**: Uses PostgreSQL window functions for efficient counting
+//! - **SQL generation**: Uses `PostgreSQL` window functions for efficient counting
 //!
 //! ## Architecture
 //!
 //! The module uses Diesel's query builder system to generate optimized SQL queries that include
-//! both pagination (LIMIT/OFFSET) and total counting (COUNT(*) OVER()) in a single database round-trip.
+//! both pagination (`LIMIT/OFFSET`) and total counting (`COUNT(*) OVER()`) in a single database round-trip.
 //! This approach is significantly more efficient than executing separate queries for data and counts.
 //!
 //! ### Generated SQL Pattern
@@ -34,7 +34,7 @@
 //! ## Key Features
 //!
 //! - **Zero-copy pagination**: Pagination parameters are computed at compile time where possible
-//! - **SQL-level optimization**: Uses PostgreSQL window functions for efficient counting
+//! - **SQL-level optimization**: Uses `PostgreSQL` window functions for efficient counting
 //! - **Flexible configuration**: Supports custom page sizes with automatic bounds checking
 //! - **Type safety**: Leverages Rust's type system to prevent common pagination errors
 //! - **Serde integration**: Full serialization/deserialization support for API responses
@@ -103,14 +103,14 @@
 //!
 //! ### Advantages
 //! - **Single query execution**: Eliminates the N+1 query problem for pagination metadata
-//! - **PostgreSQL optimization**: Leverages database-level window functions
+//! - **`PostgreSQL` optimization**: Leverages database-level window functions
 //! - **Memory efficient**: Processes results in a streaming fashion when possible
 //! - **Index friendly**: Works well with proper database indexing strategies
 //!
 //! ### Best Practices
 //! - Always add appropriate database indexes for your ORDER BY columns
 //! - Consider using cursor-based pagination for very large datasets
-//! - Set reasonable MAX_PER_PAGE limits to prevent memory exhaustion
+//! - Set reasonable `MAX_PER_PAGE` limits to prevent memory exhaustion
 //! - Use prepared statements when possible (handled automatically by Diesel)
 //!
 //! ## Error Handling
@@ -138,7 +138,7 @@
 //!
 //! ## Limitations
 //!
-//! - **PostgreSQL specific**: Uses PostgreSQL window functions (could be adapted for other DBs)
+//! - **`PostgreSQL` specific**: Uses `PostgreSQL` window functions (could be adapted for other DBs)
 //! - **Memory usage**: Large page sizes can consume significant memory
 //! - **Deep pagination performance**: Very high page numbers may have performance implications
 //! - **Complex queries**: Some very complex queries might not work with the subquery approach
@@ -250,7 +250,7 @@ impl<T: Query> Query for Paginated<T> {
 /// Implementation of Diesel's `RunQueryDsl` trait for `Paginated<T>`.
 ///
 /// This is a marker trait implementation that enables `Paginated<T>` to be executed
-/// against a PostgreSQL database connection. The empty implementation (`{}`) is sufficient
+/// against a `PostgreSQL` database connection. The empty implementation (`{}`) is sufficient
 /// because all the actual query execution logic is provided by Diesel's default implementations
 /// in the `RunQueryDsl` trait.
 ///
@@ -270,7 +270,7 @@ impl<T> RunQueryDsl<PgConnection> for Paginated<T> {}
 /// building SQL Abstract Syntax Trees (AST) that can be compiled into executable SQL.
 ///
 /// The `where T: QueryFragment<Pg>` bound ensures that the wrapped query type can also
-/// be converted to SQL for PostgreSQL, which is necessary since we need to embed the
+/// be converted to SQL for `PostgreSQL`, which is necessary since we need to embed the
 /// original query within our pagination wrapper.
 ///
 /// The `walk_ast` method builds SQL in this specific pattern:
