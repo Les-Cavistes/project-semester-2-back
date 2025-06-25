@@ -21,7 +21,7 @@ hooksmith install
 back/src/
 ├── api_response.rs  # Standardized API response handling
 ├── lib.rs          # Core database configuration and constants
-├── main.rs         # Application entry point and server configuration (Axum-based)
+├── main.rs         # Application entry point and server configuration
 ├── middlewares/    # HTTP middleware components
 │   ├── auth.rs     # API key authentication middleware
 │   ├── cors.rs     # Cross-Origin Resource Sharing configuration
@@ -41,8 +41,7 @@ back/src/
 │   └── ratp/      # RATP API client wrapper
 │       ├── mod.rs
 │       └── wrapper.rs
-├── url.rs         # URL builder for API requests
-└── utils.rs       # Database utilities and helper functions
+└── url.rs         # URL builder for API requests
 ```
 
 ## Key Components
@@ -60,6 +59,12 @@ The application uses a layered middleware approach with Axum:
 - **CORS Middleware**: Cross-origin resource sharing configuration
 - **Authentication Middleware**: API key validation (applied selectively to protected routes)
 
+### Middleware Architecture
+The application uses a layered middleware approach:
+- **Tracing Middleware**: HTTP request/response logging for observability
+- **CORS Middleware**: Cross-origin resource sharing configuration
+- **Authentication Middleware**: API key validation (applied selectively)
+
 ### API Endpoints
 - `GET /` - Root endpoint for health checks (public, no authentication required)
 - `GET /transit_stop` - Get all transit stops with pagination (requires authentication)
@@ -76,13 +81,30 @@ CAVISTES_API_KEY: your_api_key_here
 Authentication failures return:
 - `401 Unauthorized` - Missing or invalid API key
 - `500 Internal Server Error` - Server configuration error
+- `POST /transit_stop` - Create new transit stop (requires authentication)
+- `GET /transit_stop` - Get all transit stops with pagination (requires authentication)
+- `GET /transit_stop/search` - Search transit stops with pagination (requires authentication)
+- `GET /journey` - Get journey information between two points (requires authentication)
+- `GET /` - Root endpoint for health checks (public, no authentication required)
+- CORS support for local development
+
+#### Authentication
+All API endpoints require authentication via the `CAVISTES_API_KEY` header, except for the root health check endpoint (`/`). Include this header in your requests:
+
+```
+CAVISTES_API_KEY: your_api_key_here
+```
+
+Authentication failures return:
+- `401 Unauthorized` - Missing or invalid API key
+- `500 Internal Server Error` - Server configuration error
 
 ### Response Format
 
 All API responses follow a consistent format:
 
 For successful responses (2xx):
-```json
+```json5
 {
   "data": {
     // Response data here
@@ -91,7 +113,7 @@ For successful responses (2xx):
 ```
 
 For error responses (4xx, 5xx):
-```json
+```json5
 {
   "error": {
     "message": "Error description"
@@ -154,6 +176,8 @@ Environment variables (see `.env.example`):
 - `RUST_LOG`: Logging level configuration (example: "back=info,tower_http=info")
 
 Copy `.env.example` to `.env` and update the values as needed for your environment.
+
+Copy `env.example` to `.env` and update the values as needed for your environment.
 
 ## Dependencies
 
